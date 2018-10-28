@@ -11,8 +11,8 @@ Mode <- function(x) {
   tab <- tabulate(match(x, ux)); ux[tab == max(tab) ]
 }
 
-postpem <- read_csv('PEMMPST.csv') %>% select(-Persoon)
-prepem  <- read_csv('PEMMPR.csv')  %>% select(-Persoon)
+postpem <- read_csv('PEMMPST.csv')
+prepem  <- read_csv('PEMMPR.csv') 
 
 melted_post<-melt(postpem, id.vars="Persoon")  %>% mutate(phase="postpem", enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
                                        comp=str_replace(str_sub(variable,2,10), plev ,"") )
@@ -24,24 +24,34 @@ melted_pre<-melt(prepem, id.vars="Persoon")   %>% mutate(phase="prepem", enabler
 
 assdata<-bind_rows(melted_pre,melted_post) 
 
+enablers_Plev<- assdata %>% select(-Persoon) %>% 
+  group_by(phase,enabler, comp, plev) %>% summarise(modv=getmode(value)) 
+# distinct(enablers_Plev, enabler,comp)
 
 
-# set.seed(3)
-# ggplot(mass, aes(x=variable, y=value, colour = atype)) + 
-#   geom_point(position=position_jitter(h=0.15,w=0.15))
+enablers_PlevNested<-enablers_Plev %>% nest(-enabler)
 
-ggplot(mass, aes(x=variable, y=value, colour = atype, size=atype)) +
-  geom_point() +
+ 
+# enablers_Plev<- enablers_Plev %>% mutate(plev2=paste(enabler,comp,"_",plev))
+
+ggplot(enablers_Plev, aes(x=interaction(enabler,comp, plev), y=modv, colour = phase, size=phase)) +
+ geom_line()+
   scale_color_manual(values=c("red","blue")) +
-  scale_size_manual(values=c(5,4))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  scale_size_manual(values=c(2,1))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+   # facet_grid(. ~ enabler )
+
+# .....
+# enablers_Clev<- enablers_Plev  %>% group_by(phase,enabler, comp) %>% 
+#   summarise( score=sum(modv))
+# # 
+# ggplot(enablers_Clev, aes(x=comp, y=score, colour = phase, size=phase)) +
+#   geom_point() +
+#   scale_color_manual(values=c("red","blue")) +
+#   scale_size_manual(values=c(5,4))+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
-ggplot(data = melted_post, aes(y=Persoon, x=variable, fill=value)) + 
-  geom_tile()
-ggplot(data = melted_pre, aes(y=Persoon, x=variable, fill=value)) + 
-  geom_tile()
-posta<- postpem %>% summarise_all(funs(getmode))
-preta<- prepem %>% summarise_all(funs(getmode))
 
 
 #postFa<- postpem %>% summarise_all(funs(min(., na.rm = TRUE)))
