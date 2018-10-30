@@ -1,44 +1,33 @@
 library(tidyverse)
 library(reshape2)
 
-getmode <- function(v) {
-  uniqv <- unique(v)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-
-Mode <- function(x) {
-  ux <- na.omit(unique(x) )
-  tab <- tabulate(match(x, ux)); ux[tab == max(tab) ]
-}
-
 postpem <- read_csv('PEMMPST.csv')
 prepem  <- read_csv('PEMMPR.csv') 
-
-melted_post<-melt(postpem, id.vars="Persoon")  %>% mutate(phase="postpem", enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
-                                       comp=str_replace(str_sub(variable,2,10), plev ,"") )
-melted_pre<-melt(prepem, id.vars="Persoon")   %>% mutate(phase="prepem", enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
-                                     comp=str_replace(str_sub(variable,2,10), plev ,"") )
-
-# aTYpes <- c("postpem", "prepem")
-# enabler<- c(rep(c("D"),12),rep(c("P"),12),rep(c("O"),12),rep(c("I"),8),rep(c("M"),8))
-
-assdata<-bind_rows(melted_pre,melted_post) 
+melted_post<-melt(postpem, id.vars="Persoon", value.name = "postv")  %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
+                                                                               comp=str_replace(str_sub(variable,2,10), plev ,"") )  
+melted_pre<-melt(prepem, id.vars="Persoon", value.name = "prev")   %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
+                                                                               comp=str_replace(str_sub(variable,2,10), plev ,"") )
+assdata<-inner_join(melted_post, melted_pre, by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = 'Persoon'))  %>% select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
+# prepare data
 
 enablers_Plev<- assdata %>% select(-Persoon) %>% 
   group_by(phase,enabler, comp, plev) %>% summarise(modv=getmode(value)) 
 # distinct(enablers_Plev, enabler,comp)
+nestByEnablerComp <- assdata  %>% select(-Persoon,-variable) %>% nest(-enabler,-comp)
 
+ggplot(nestByEnablerComp$data[[1]], aes(x=plev, y=value, fill=phase))+  geom_violin()
+ggplot(nestByEnablerComp$data[[1]], aes(x=plev, y=value, fill=phase)) + geom_bar(stat="identity")
 
-enablers_PlevNested<-enablers_Plev %>% nest(-enabler)
+# enablers_PlevNested<-enablers_Plev %>% nest(-enabler)
 
  
 # enablers_Plev<- enablers_Plev %>% mutate(plev2=paste(enabler,comp,"_",plev))
 
-ggplot(enablers_Plev, aes(x=interaction(enabler,comp, plev), y=modv, colour = phase, size=phase)) +
- geom_line()+
-  scale_color_manual(values=c("red","blue")) +
-  scale_size_manual(values=c(2,1))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+# ggplot(enablers_Plev, aes(x=interaction(enabler,comp, plev), y=modv, colour = phase, size=phase)) +
+#  geom_line()+
+#   scale_color_manual(values=c("red","blue")) +
+#   scale_size_manual(values=c(2,1))+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
    # facet_grid(. ~ enabler )
 
 # .....
