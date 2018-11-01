@@ -15,15 +15,14 @@ posx<-c( rep(1,length(unique(df$prev))),rep(2,length(unique(df$postv))))
                        stringsAsFactors= FALSE )
   
   edges <- data.frame(N1 = df$prev, N2 = df$postv, Value = df$freq)
+  makeRiver(nodes, edges)
+  
   # 
   # nodes <- data.frame( ID= LETTERS[1:3],
   #                      x= c( 1, 1, 2 ),
   #                      col= c( "yellow", NA, NA ),
   #                      labels= c( "Node A", "Node B", "Node C" ),
   #                      stringsAsFactors= FALSE )
-  
-makeRiver( nodes, edges)
-
 }
 
 postpem <- read_csv('PEMMPST.csv')
@@ -44,23 +43,7 @@ allflowsPP <- allflowsPP%>%
   mutate(gmodel = map(data, flowCP))
 
 
-
-p1 <- qplot(1,1)
-p2 <- qplot(1,1)
-p3<-plot(allflowsPP$gmodel[[2]])
-p.both <- arrangeGrob(p1, p2)
-grid::grid.draw(p.both)
-
-
-grid.arrange(p1, p2, ncol=2, top="Main Title")
-
-
-
-
-
 cells<-assdata  %>% group_by(enabler,comp,plev) %>% nest() %>% select (-data)
-
-
 levs<- as_data_frame(distinct(cells,plev))
 enablers<- as_data_frame(distinct(cells,enabler))
 comps<-as_data_frame(distinct(cells,comp))
@@ -76,12 +59,12 @@ grobs<-list(grobTree(rectGrob(gp=gpar(fill=1, alpha=0.5)), textGrob("enablers"))
              grobTree(rectGrob(gp=gpar(fill=7, alpha=0.5)), textGrob("D")))
                 
 
-compsGB1<-lapply(1:4, function(ii)  grobTree(rectGrob(gp=gpar(fill=ii, alpha=0.5)), allflowsPP$gmodel[[ii]]))
+compsGB1<-lapply(1:4, function(ii) allflowsPP$gmodel[[ii]])
 
 grobs<-append(grobs,compsGB1)
-grobs$lan<-grobTree(rectGrob(gp=gpar(fill=7, alpha=0.5)), textGrob("C"))
 
-compsGB2<-lapply(1:4, function(ii)  grobTree(rectGrob(gp=gpar(fill=ii, alpha=0.5)), allflowsPP$gmodel[[4+ii]]))
+
+compsGB2<-lapply(1:4, function(ii) allflowsPP$gmodel[[4+ii]])
 
 
 grobs<- grobs  %>% append(compsGB2)
