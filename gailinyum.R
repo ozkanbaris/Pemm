@@ -107,12 +107,18 @@ nodes<-  data.frame( ID= IDs,
 
 edges <- data.frame(N1 = df22$prev, N2 = df22$postv, Value = df22$freq)
 
-style <- list( edgestyle= "straight", nodestyle= "rectangle", edgecol="gradient" )
-plot(makeRiver(nodes, edges), plot_area=1,  node_margin = 0.1, nodewidth= 1.5, mar=c(0,0,0,0))
+plot(makeRiver(nodes, edges) ,plot_area=1.3, xscale=1.1,  
+     node_margin = 0.1, nodewidth= 1.5, mar=c(0,0,0,0), asp=.8)
 
-g2<- as.ggplot(~plot(makeRiver(nodes, edges) ,plot_area=1,  node_margin = 0.1, nodewidth= 1.5, mar=c(0,0,0,0)))
+g2<- as.grob(~plot(makeRiver(nodes, edges) ,plot_area=1.3, xscale=1.1,  
+                     node_margin = 0.1, nodewidth= 1.5, mar=c(0,0,0,0)))
 
-grid.arrange(g2,g2)
+g3<-grobTree(rectGrob(gp=gpar(fill=1, alpha=0.5)), g2)
+ 
+grid.arrange(g3)
+
+
+
 
 # 
 # g1<-flowCP(df1)
