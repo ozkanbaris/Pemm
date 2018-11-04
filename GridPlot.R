@@ -18,30 +18,3 @@ nestByEnablerComp <- assdata  %>% select(-Persoon,-variable) %>% nest(-enabler,-
 ggplot(nestByEnablerComp$data[[1]], aes(x=plev, y=value, fill=phase))+  geom_violin()
 ggplot(nestByEnablerComp$data[[1]], aes(x=plev, y=value, fill=phase)) + geom_bar(stat="identity")
 
-# enablers_PlevNested<-enablers_Plev %>% nest(-enabler)
-
- 
-# enablers_Plev<- enablers_Plev %>% mutate(plev2=paste(enabler,comp,"_",plev))
-
-# ggplot(enablers_Plev, aes(x=interaction(enabler,comp, plev), y=modv, colour = phase, size=phase)) +
-#  geom_line()+
-#   scale_color_manual(values=c("red","blue")) +
-#   scale_size_manual(values=c(2,1))+
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-   # facet_grid(. ~ enabler )
-
-# .....
-# enablers_Clev<- enablers_Plev  %>% group_by(phase,enabler, comp) %>% 
-#   summarise( score=sum(modv))
-# # 
-# ggplot(enablers_Clev, aes(x=comp, y=score, colour = phase, size=phase)) +
-#   geom_point() +
-#   scale_color_manual(values=c("red","blue")) +
-#   scale_size_manual(values=c(5,4))+
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-
-
-#postFa<- postpem %>% summarise_all(funs(min(., na.rm = TRUE)))
-#pretFa<- prepem %>% summarise_all(funs(min(., na.rm = TRUE)))

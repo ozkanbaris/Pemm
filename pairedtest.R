@@ -1,60 +1,119 @@
 library(coin) 
 library(tidyverse)
 library(reshape2)
+library(grid)
+library(gridExtra)
+
+# Create the function.
+getPrevmode <- function(v) {
+  uniqv <- unique(v$prev,na.rm=TRUE)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+getPostmode <- function(v) {
+  uniqv <- unique(v$postv,na.rm=TRUE)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+calWX <- function(df) {
+ 
+  # res <- wilcoxsign_test (pairedData$prev ~ pairedData$postv, zero.method = c("Pratt"))
+  # res
+  df<-df %>% filter(!is.na(prev) | !is.na(postv) ) 
+  r<-wilcoxsign_test (df$prev ~ df$postv)
+  res<-paste(round(pvalue(r),3) ,"-" , statistic(r, "linear"))
+}
+
 
 postpem <- read_csv('PEMMPST.csv')
 prepem  <- read_csv('PEMMPR.csv') 
+
 melted_post<-melt(postpem, id.vars="Persoon", value.name = "postv")  %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
                                                                                  comp=str_replace(str_sub(variable,2,10), plev ,"") )  
 melted_pre<-melt(prepem, id.vars="Persoon", value.name = "prev")   %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
                                                                                comp=str_replace(str_sub(variable,2,10), plev ,"") )
-assdata<-inner_join(melted_post, melted_pre, by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = 'Persoon'))  %>% select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
-# prepare data
 
-# enablers_Plev<- assdata %>% select(-Persoon) %>% 
-#   group_by(phase,enabler, comp, plev) %>% summarise(modv=getmode(value)) 
+assdata<-inner_join(melted_post, melted_pre,
+                    by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = "Persoon"))  %>% 
+                    select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
 
-before <- filter(assdata, phase=="prepem", enabler=="D", comp=="P", plev=="P4")  
-after <-  filter(assdata, phase=="postpem", enabler=="D", comp=="P", plev=="P4")  
-res <- wilcoxsign_test (before$value ~ after$value, zero.method = c("Pratt"))
-res <- wilcoxsign_test (before$value ~ after$value, distribution="exact")
-res
-# resres <- wilcox.test(value ~ phase, data = bind_rows(before,after), paired = TRUE, zero.method="Pratt")
+allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
+allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
+allflowsPP <- allflowsPP %>%  mutate(gmodel = map(data, calWX), preMode = map(data, getPrevmode), postMode=map(data, getPostmode) )
+# h1<-c(1,1,1,1,1,1,1,1,1,1,1,1,1)
+# h2<-c(2,1,2,1,1,2,1,1,1,2,1,1,1)
+# pairedData <-  filter(assdata,  enabler=="D", comp=="D", plev=="P3")
+# h1<-pairedData$prev
+# h2<-pairedData$postv
+# wilcoxsign_test (h1 ~ h2, distribution="exact", zero.method = c("Pratt"))
+
+cells<-assdata  %>% group_by(enabler,comp,plev) %>% nest() %>% select (-data)
 
 
+# enablers<-  as_vector(top_n (distinct(cells,enabler),1))
+enablers<-  as_vector(distinct(cells,enabler))
+levs<- as_vector(distinct(cells,plev))
+
+# header
+grobs<-list(
+  rectGrob(gp=gpar(fill=1, alpha=0.5)),
+  grobTree(rectGrob(gp=gpar(fill=2, alpha=0.5,fontsize = 8)), textGrob("En")),
+  grobTree(rectGrob(gp=gpar(fill=4, alpha=0.5)), textGrob(levs[1])),
+  grobTree(rectGrob(gp=gpar(fill=5, alpha=0.5)),textGrob(levs[2])),
+  grobTree(rectGrob(gp=gpar(fill=6, alpha=0.5)), textGrob(levs[3])),
+  grobTree(rectGrob(gp=gpar(fill=7, alpha=0.5)), textGrob(levs[4])))
+
+
+
+for (en in enablers) {
+  
+  grobs<-c(grobs,list(grobTree(rectGrob(gp=gpar(fill=7, alpha=0.5)), textGrob(en))))
+  ecomps<-as_vector(filter(cells, enabler==en) %>% distinct(comp))
+  
+  # 
+  for (enc in ecomps) {
+    grobs<-c(grobs,  list(grobTree(rectGrob(gp=gpar(fill=1, alpha=0.5,fontsize = 8)), textGrob(enc))))
+    
+    encpleve<-as_vector(filter(cells, enabler==en, comp==enc) %>% select(plev))
+    
+    
+    for (encp in encpleve) {
+      pFrame<-filter(allflowsPP, enabler==en,  comp==enc,plev==encp)
+      pInc<-  sum(pFrame$data[[1]]$vdiff >0, na.rm=TRUE)
+      pDec<-  sum(pFrame$data[[1]]$vdiff <0, na.rm=TRUE)
+        
+      pm<-select(pFrame,gmodel)
+      grobs<-c(grobs,list(grobTree(rectGrob(gp=gpar(fill=ifelse(pm$gmodel[[1]]< .05,"green","red"), alpha=0.5,fontsize = 8)), 
+                                   textGrob(paste(pm$gmodel[[1]],"\n (+):",pInc, "(-)", pDec, "modPr:", pFrame$preMode,"modPo:", pFrame$preMode)))))
+      
+      
+    }
+    
+    }
+  
+}
+
+
+
+lay <- rbind(
+  c(1,2,2,3,4,5,6),
+  c(1,7,c(8:12)),
+  c(1,7,c(13:17)),
+  c(1,7,c(18:22)),
+  c(1,23,c(24:28)),
+  c(1,23,c(29:33)),
+  c(1,23,c(34:38)),
+  c(1,39,c(40:44)),
+  c(1,39,c(45:49)),
+  c(1,39,c(50:54)),
+  c(1,55,c(56:60)),
+  c(1,55,c(61:65)),
+  c(1,66,c(67:71)),
+  c(1,66,c(72:76)))
 # 
-# set.seed(1L)
-# cb <- data.frame(group = factor(c("A", "B", "C", "D", "E")), 
-#                  WC = runif(100, 0, 100), 
-#                  Ana = runif(100, 0, 100), 
-#                  Clo = runif(100, 0, 100))
-# Code:
-#   
-#   library(purrr)
-# 
-# combins <- combn(levels(cb$group), 2)
-# 
-# params_list <- split(as.vector(combins), rep(1:ncol(combins), each = nrow(combins)))
-# 
-# model_wc <- map(.x = params_list, 
-#                 .f = ~ wilcox.test(formula = WC ~ group, 
-#                                    data    = subset(cb, group %in% .x)))
-# 
-# model_ana <- map(.x = params_list, 
-#                  .f = ~ wilcox.test(formula = Ana ~ group, 
-#                                     data    = subset(cb, group %in% .x)))
-# 
-# model_clo <- map(.x = params_list, 
-#                  .f = ~ wilcox.test(formula = Clo ~ group, 
-#                                     data    = subset(cb, group %in% .x)))
-# 
-# wilcox_pvals <- do.call(cbind, list(t(data.frame(map(.x = model_wc, .f  = "p.value"))),
-#                                     t(data.frame(map(.x = model_ana, .f = "p.value"))),
-#                                     t(data.frame(map(.x = model_clo, .f = "p.value")))))
-# 
-# row.names(wilcox_pvals) <- unlist(map(.x = params_list, .f = ~ paste0(.x, collapse = "")))
-# 
-# colnames(wilcox_pvals) <- names(cb)[2:4]
+grid.arrange(grobs= grobs, layout_matrix = lay, 
+             widths = unit(c(1, 1, 1, 4,4,4,4),  c("lines", "null", "null", "null","null","null","null")))
+
 # 
 # 
 # 
