@@ -5,8 +5,9 @@ library(gridExtra)
 library(grid)
 library(ggplotify)
 
-library(riverplot )
-library(alluvial)
+# library(riverplot )
+# library(alluvial)
+library(ggplot2)
 
 
 nodeCol<-function (x){
@@ -42,6 +43,16 @@ nodeCol<-function (x){
 #   
 # }
 
+plotCP<- function(df){
+  
+  
+  pl<-ggplot(df, aes(prev, postv,size = freq)) +geom_point(color="grey")+
+  theme(axis.title=element_blank(),
+         axis.text = element_blank() , 
+         legend.position="none") + geom_abline(mapping = NONE, intercept = 0, slope = 1) 
+
+}
+
 flowCP <- function(df22){
   # df22$prev <- paste("L", df22$prev, sep="") 
   # df22$postv <- paste("L", df22$postv, "P",sep="") 
@@ -74,7 +85,7 @@ allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) %>% filter(!is
 
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest()
 
-allflowsPP <- allflowsPP%>% mutate(gmodel = map(data, flowCP))
+allflowsPP <- allflowsPP%>% mutate(gmodel = map(data, plotCP))
 
 # allflowsPP <- allflowsPP%>% mutate(gmodel = map(data, aluvCP))
 
@@ -114,9 +125,10 @@ for (en in enablers) {
      
      pm<-select(filter(allflowsPP, enabler==en,  comp==enc,plev==encp),gmodel)
      # plot(pm$gmodel[[1]])
-     grobs<-c(grobs,list(as.grob(~plot(pm$gmodel[[1]], plot_area=1.3, xscale=1.1,  default_style=custom.style, gp = gpar(lwd = 2, col = "blue", fill = NA),
-                                                           node_margin = 0.1, nodewidth= 1.5, mar=c(0,0,0,0)))))
-     # grobs<-c(grobs,list(as.grob(pm$gmodel[[1]])))
+     # grobs<-c(grobs,list(as.grob(~plot(pm$gmodel[[1]], plot_area=1.3, xscale=1.1,  default_style=custom.style, gp = gpar(lwd = 2, col = "blue", fill = NA),
+     #                                                       node_margin = 0.1, nodewidth= 1.5, mar=c(0,0,0,0)))))
+
+      grobs<-c(grobs,list(as.grob(pm$gmodel[[1]])))
    }
    
  }
