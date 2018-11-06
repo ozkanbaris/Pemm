@@ -9,6 +9,58 @@ library(riverplot )
 library(ggalluvial)
 library(alluvial)
 
+source("LoadPemm.R") 
+
+
+nodeCol<-function (x){
+  ifelse(grepl("0",x,  fixed = TRUE),"grey",
+         ifelse(grepl("1", x, fixed = TRUE),"red", 
+                ifelse(grepl("2",x, fixed = TRUE),"yellow",   
+                       ifelse(grepl( "3",x,fixed = TRUE),"green", "grey"))))
+}
+# 
+# galluvCP <- function(df11) {
+#   df11$wa=ifelse(df11$vdiff > 0, "green", "gray")
+#   g1a<-as.grob(ggplot(df11,
+#               aes(y = freq, axis1 = prev, axis2 = postv)) +
+#     geom_alluvium(aes(fill = wa ), width = 1/12) +
+#     geom_stratum(width = 1/12,  color = "grey") +
+#     geom_label(stat = "stratum", label.strata = TRUE) +
+#     scale_x_discrete(limits = c("Pre", "Post"), expand = c(.05, .05)) +
+#     scale_fill_brewer(type = "qual", palette = "Set1") +
+#     ggtitle("Change Maturity"))
+# }
+# 
+# aluvCP <-function(df){
+#   df11<- df%>% mutate(vdiff=postv-prev)
+#  
+#    as.grob(expression(alluvial(
+#     select(df11, prev, postv),
+#     freq=df11$freq,
+#     col = ifelse(df11$vdiff >= 0, ifelse(df11$vdiff > 0, "green", "gray"), "red"),
+#     border = ifelse(df11$vdiff == 0, "green", "red"),
+#     layer = df11$vdiff < 0,
+#     alpha = 0.8,
+#     blocks=FALSE)))
+#   
+# }
+# flowCP <- function(df22){
+#   # df22$prev <- paste("L", df22$prev, sep="") 
+#   # df22$postv <- paste("L", df22$postv, "P",sep="") 
+#   lccol<-as.vector(lapply(sort(unique(df22$prev)), nodeCol ))
+#   rccol<-as.vector(lapply(sort(unique(df22$postv)), nodeCol ))
+#   posx<-c( rep(1,length(unique(df22$prev))),rep(2,length(unique(df22$postv))))
+#   IDs<-c(sort(unique(df22$prev)),sort(unique(df22$postv)))
+#   nodes<-  data.frame( ID= IDs,
+#                        x= posx ,
+#                        col= unlist(append(lccol,rccol)),
+#                        stringsAsFactors= FALSE )
+#   
+#   edges <- data.frame(N1 = df22$prev, N2 = df22$postv, Value = df22$freq)
+#   r<-makeRiver(nodes, edges)
+#   
+# }
+
 flowCP <- function(df){
   df$prev <- paste("L", df$prev, sep="") 
   df$postv <- paste("L", df$postv, "P",sep="") 
@@ -30,12 +82,11 @@ flowCP <- function(df){
   #                      stringsAsFactors= FALSE )
 }
 
-postpem <- read_csv('PEMMPST.csv')
-prepem  <- read_csv('PEMMPR.csv') 
-melted_post<-melt(postpem, id.vars="Persoon", value.name = "postv")  %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
-                                                                                comp=str_replace(str_sub(variable,2,10), plev ,"") )  
-melted_pre<-melt(prepem, id.vars="Persoon", value.name = "prev")   %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
-                                                                             comp=str_replace(str_sub(variable,2,10), plev ,"") )
+
+
+
+
+
 assdata<-inner_join(melted_post, melted_pre, by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = 'Persoon'))  %>% select(-variable.x, -variable.y)   
 allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) %>% filter(!is.na(prev) | !is.na(postv) ) %>% summarise(freq=n())
 allflowsPP <- allflows %>% mutate(vdiff=postv-prev) %>% group_by(enabler,comp,plev) %>% nest()

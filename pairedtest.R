@@ -3,6 +3,7 @@ library(tidyverse)
 library(reshape2)
 library(grid)
 library(gridExtra)
+source("LoadPemm.R") 
 
 # Create the function.
 getPrevmode <- function(v) {
@@ -25,14 +26,6 @@ calWX <- function(df) {
 }
 
 
-postpem <- read_csv('PEMMPST.csv')
-prepem  <- read_csv('PEMMPR.csv') 
-
-melted_post<-melt(postpem, id.vars="Persoon", value.name = "postv")  %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
-                                                                                 comp=str_replace(str_sub(variable,2,10), plev ,"") )  
-melted_pre<-melt(prepem, id.vars="Persoon", value.name = "prev")   %>% mutate( enabler= str_sub(variable,1,1), plev=str_sub(variable,-2,-1), 
-                                                                               comp=str_replace(str_sub(variable,2,10), plev ,"") )
-
 assdata<-inner_join(melted_post, melted_pre,
                     by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = "Persoon"))  %>% 
                     select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
@@ -40,15 +33,8 @@ assdata<-inner_join(melted_post, melted_pre,
 allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
 allflowsPP <- allflowsPP %>%  mutate(gmodel = map(data, calWX), preMode = map(data, getPrevmode), postMode=map(data, getPostmode) )
-# h1<-c(1,1,1,1,1,1,1,1,1,1,1,1,1)
-# h2<-c(2,1,2,1,1,2,1,1,1,2,1,1,1)
-# pairedData <-  filter(assdata,  enabler=="D", comp=="D", plev=="P3")
-# h1<-pairedData$prev
-# h2<-pairedData$postv
-# wilcoxsign_test (h1 ~ h2, distribution="exact", zero.method = c("Pratt"))
 
 cells<-assdata  %>% group_by(enabler,comp,plev) %>% nest() %>% select (-data)
-
 
 # enablers<-  as_vector(top_n (distinct(cells,enabler),1))
 enablers<-  as_vector(distinct(cells,enabler))
@@ -62,7 +48,6 @@ grobs<-list(
   grobTree(rectGrob(gp=gpar(fill=5, alpha=0.5)),textGrob(levs[2])),
   grobTree(rectGrob(gp=gpar(fill=6, alpha=0.5)), textGrob(levs[3])),
   grobTree(rectGrob(gp=gpar(fill=7, alpha=0.5)), textGrob(levs[4])))
-
 
 
 for (en in enablers) {
@@ -94,7 +79,6 @@ for (en in enablers) {
 }
 
 
-
 lay <- rbind(
   c(1,2,2,3,4,5,6),
   c(1,7,c(8:12)),
@@ -114,8 +98,3 @@ lay <- rbind(
 grid.arrange(grobs= grobs, layout_matrix = lay, 
              widths = unit(c(1, 1, 1, 4,4,4,4),  c("lines", "null", "null", "null","null","null","null")))
 
-# 
-# 
-# 
-# 
-# 
