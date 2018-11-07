@@ -22,6 +22,9 @@ testData = flatdata %>%  filter(enabler=="D", comp=="C", plev=="P3")
 ### Create a new variable which is the Likert scores as an ordered factor
 
 testData$score.f = factor(testData$score, ordered = TRUE)
+
+
+
 model = clmm(score.f ~ Time + (1|Persoon), data = testData)
 resClmm<-Anova.clmm(model,type = "II")
 
