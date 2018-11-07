@@ -17,7 +17,8 @@ plotCP<- function(df){
 assdata<-inner_join(melted_post, melted_pre, by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = "Persoon")) %>% 
   select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
 
-allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) %>% filter(!is.na(prev) | !is.na(postv) ) %>% summarise(freq=n())
+allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv)%>% 
+  filter(!is.na(prev) | !is.na(postv) ) %>% summarise(freq=n())
 
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest()
 
@@ -79,15 +80,25 @@ lay <- rbind(
   c(1,66,c(67:71)),
   c(1,66,c(72:76)))
 
- grid.arrange(grobs= grobs, layout_matrix = lay, 
-              widths = unit(c(1, 1, 1, 4,4,4,4),  c("lines", "null", "null", "null","null","null","null")))
- 
- 
- d=data.frame(s=c(1,2,3), ic=c(0,2,5))
- 
- 
-df<- allflowsPP %>%  filter(enabler=="D", comp=="P", plev=="P2")
+grid.arrange(grobs = grobs,
+             layout_matrix = lay,
+             widths = unit(
+               c(1, 1, 1, 4, 4, 4, 4),
+               c("lines", "null", "null", "null", "null", "null", "null")
+             ))
 
+
+#Aggregation PLot at comp levels
+dfC <- allflows %>%  filter(enabler == "D", comp == "P") 
+
+
+ggplot( allflows, aes(prev, postv, size=freq , color=plev)) +
+  geom_point(alpha=0.4, position=position_jitter(h=0.02,w=0.02))+
+  scale_size_continuous(range = c(4, 10), trans="exp")+
+  geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
+  # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
+  coord_cartesian(xlim = 0:3,ylim =0:3)+
+ facet_wrap( vars(enabler,comp), ncol=2,labeller = label_wrap_gen(multi_line=FALSE))
 
 
 

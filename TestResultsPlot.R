@@ -19,53 +19,32 @@ source("LoadPemm.R")
 
 # Create the function.
 getPrevmode <- function(v) {
-  uniqv <- unique(v$prev,na.rm=TRUE)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
+  nz<-filter(v, prev !=0)  %>% select(prev)
+  uniqv <- unique(nz)
+  uniqv[which.max(tabulate(match(nz, uniqv)))]
 }
 
 getPostmode <- function(v) {
-  uniqv <- unique(v$postv,na.rm=TRUE)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
+  nz<-filter(v, postv !=0) %>% select(postv)
+  uniqv <- unique(nz)
+  uniqv[which.max(tabulate(match(nz, uniqv)))]
 }
-
+#lastchange
 calWX <- function(df) {
- 
-  # res <- wilcoxsign_test (pairedData$prev ~ pairedData$postv, zero.method = c("Pratt"))
-  # res
-  df<-df %>% filter(!is.na(prev) | !is.na(postv) ) 
+  df<-df %>% filter( !(prev ==0 | postv ==0)  ) 
+  # df<-df %>% filter(!is.na(prev) | !is.na(postv) ) 
   r<-wilcoxsign_test (df$prev ~ df$postv)
   res<-paste(round(pvalue(r),3) ,"-" , statistic(r, "linear"))
 }
 
 calClmm <- function(dft) {
-  
+  dft<-dft %>% filter(!(prev ==0 | postv ==0)  )
   dat1<-dft  %>% select(-postv)  %>% rename( score = prev)   %>% mutate( Time = "Pre")
   dat2<-dft  %>% select(-prev)  %>% rename( score = postv)    %>% mutate( Time = "Post")
   
   myData <- bind_rows(dat1,dat2)
   myData$score.f <- factor(myData$score, ordered = TRUE)
   myData
-
-
-  # Anova.clmm(model,type = "II")
-  
-  # testData$score.f = factor(testData$score, ordered = TRUE)
-  # 
-  # 
-  # 
-  # model = clmm(score.f ~ Time + (1|Persoon), data = testData)
-  # resClmm<-Anova.clmm(model,type = "II")
-  # 
-  # 
-  # model.fixed = clm(score.f ~ Time, data = testData)
-  # effSize<-anova(model,null = model.fixed)
-  # 
-  # model.clm = clm(score.f ~ Time + Persoon, data = testData)
-  # nominal_test(model.clm)
-  # scale_test(model.clm)
-  
-  
-  
 }
 
 
@@ -75,13 +54,16 @@ assdata<-inner_join(melted_post, melted_pre,
 
 allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
-allflowsPP <- allflowsPP %>%  mutate(gmodel = map(data, calWX),
+allflowsPP <- allflowsPP %>%  mutate(wxTest = map(data, calWX),
                                      preMode = map(data, getPrevmode), 
-                                     postMode=map(data, getPostmode) ) %>% mutate(clmmP=map(data, calClmm))
+                                     postMode=map(data, getPostmode),
+                                     clmmP=map(data, calClmm))
 
 cells<-assdata  %>% group_by(enabler,comp,plev) %>% nest() %>% select (-data)
 enablers<-  as_vector(distinct(cells,enabler))
 levs<- as_vector(distinct(cells,plev))
+
+
 
 # header
 grobs<-list(
@@ -113,16 +95,15 @@ for (en in enablers) {
       
       model = clmm(score.f ~ Time + (1|Persoon), data = anovaData)
       
-      anan<-Anova.clmm(model,type = "II")
+      anavon<-Anova.clmm(model,type = "II")
         
       
       grobs<-c(grobs,list(grobTree(
-        rectGrob(gp=gpar(fill=ifelse(pm$gmodel[[1]]< .05,"green","red"), alpha=0.2,fontsize = 5)), 
-        textGrob(paste(" Wx.Sig p-Stat", pm$gmodel[[1]]," (+):",pInc, "(-)", pDec,
-                       "\n modPr-Pst:", pm$preMode,"-", pm$postMode, " clmmPS ",round(anan[[3]],4)
-                       
-                      
-                       )
+        rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]]< .05,"green","white"), alpha=0.2,fontsize = 5)), 
+        textGrob(paste(" Wx.Sig p-Stat", pm$wxTest[[1]]," (+):",pInc, "(-)", pDec,
+                       "\n modPr-Pst:", pm$preMode,"-", pm$postMode, " clmmPS ",round(anavon[[3]],4)),
+                        gp=gpar(fontface = ifelse(round(anavon[[3]],4) < .05,2,1), 
+                         col=ifelse((pm$postMode[[1]]!= pm$preMode[[1]]),"red","black"))
                  
                  
                  ))))
@@ -154,3 +135,23 @@ lay <- rbind(
 grid.arrange(grobs= grobs, layout_matrix = lay, 
              widths = unit(c(1, 1, 1, 4,4,4,4),  c("lines", "null", "null", "null","null","null","null")))
 
+
+
+# 
+# 
+# ##########Calculate PLot Mods#################
+# 
+# allflowsMods <- allflowsPP %>%  mutate(gmodel = map(data, calWX),
+#                                      preMode = map(data, getPrevmode), 
+#                                      postMode=map(data, getPostmode) ) %>% mutate(clmmP=map(data, calClmm))
+# 
+# #aggregation at comp levels
+# 
+# ggplot( allflows, aes(prev, postv, size=freq , color=plev)) +
+#   geom_point(alpha=0.4, position=position_jitter(h=0.02,w=0.02))+
+#   scale_size_continuous(range = c(4, 10), trans="exp")+
+#   geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
+#   # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
+#   coord_cartesian(xlim = 0:3,ylim =0:3)+
+#   facet_wrap( vars(enabler,comp), ncol=2,labeller = label_wrap_gen(multi_line=FALSE))
+# 
