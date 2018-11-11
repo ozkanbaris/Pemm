@@ -10,8 +10,33 @@ library(car)
 library(RVAideMemoire)
 library(tidyverse)
 library(reshape2)
+library(coin)
+
 
 source("LoadPemm.R") 
+
+#Aggregation PLot at comp levels
+
+assdata<-inner_join(melted_post, melted_pre, by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = "Persoon")) %>% 
+  select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
+
+
+
+dft <- assdata %>%  filter(enabler == "D", comp == "C", plev== "P1") 
+
+dat1<-dft  %>% select(-postv)  %>% rename( score = prev)   %>% mutate( Time = "Pre")
+dat2<-dft  %>% select(-prev)  %>% rename( score = postv)    %>% mutate( Time = "Post")
+myData <- bind_rows(dat1,dat2) %>% select(Persoon, score, Time)
+myData$score <- factor(myData$score , ordered = TRUE)
+myData$Persoon <- factor(myData$Persoon)
+myData$Time <- factor(myData$Time)
+
+# independence_test(Length ~ Hand,                  data = Data)
+symmetry_test(score ~ Time | Persoon,   data = myData,  paired = TRUE)
+
+
+
+
 
 
 melted_prem = melted_pre%>% mutate(Time=1)  %>% rename( score = prev)

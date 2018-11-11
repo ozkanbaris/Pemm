@@ -20,14 +20,14 @@ source("LoadPemm.R")
 # Create the function.
 getPrevmode <- function(v) {
   nz<-filter(v, prev !=0)  %>% select(prev)
-  uniqv <- unique(nz)
-  uniqv[which.max(tabulate(match(nz, uniqv)))]
+  uniqv <- unique(nz[[1]])
+  uniqv[which.max(tabulate(match(nz[[1]], uniqv)))]
 }
 
 getPostmode <- function(v) {
   nz<-filter(v, postv !=0) %>% select(postv)
-  uniqv <- unique(nz)
-  uniqv[which.max(tabulate(match(nz, uniqv)))]
+  uniqv <- unique(nz[[1]])
+  uniqv[which.max(tabulate(match(nz[[1]], uniqv)))]
 }
 #lastchange
 calWX <- function(df) {
@@ -93,27 +93,36 @@ for (en in enablers) {
       pDec<-  sum(pm$data[[1]]$vdiff <0, na.rm=TRUE)
       anovaData<-pm$clmmP[[1]]
       
+      anovaData$Persoon<-factor(anovaData$Persoon)
+      
       model = clmm(score.f ~ Time + (1|Persoon), data = anovaData)
       
       anavon<-Anova.clmm(model,type = "II")
-        
       
+      model.clm = clm(score.f ~ Time + Persoon,  data = anovaData)
+      
+      ntest<- nominal_test(model.clm)
+      stest<- scale_test(model.clm)
+      
+      
+    
+      print(en)
+      print(enc)
+      print(encp)
+      print(median(pm$data[[1]]$prev))
+       print(median(pm$data[[1]]$postv))
       grobs<-c(grobs,list(grobTree(
         rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]]< .05,"green","white"), alpha=0.2,fontsize = 5)), 
         textGrob(paste(" Wx.Sig p-Stat", pm$wxTest[[1]]," (+):",pInc, "(-)", pDec,
-                       "\n modPr-Pst:", pm$preMode,"-", pm$postMode, " clmmPS ",round(anavon[[3]],4)),
+                       # "\n modPr-Pst:", pm$preMode,"-", pm$postMode, " clmmPS ",round(anavon[[3]],4)),
+                       "\n medPr-Pst:", median(pm$data[[1]]$prev),"-", median(pm$data[[1]]$postv),"mods", pm$preMode,"-", pm$postMode, " cPS ",round(anavon[[3]],4)),
                         gp=gpar(fontface = ifelse(round(anavon[[3]],4) < .05,2,1), 
-                         col=ifelse((pm$postMode[[1]]!= pm$preMode[[1]]),"red","black"))
-                 
-                 
+                         # col=ifelse((pm$postMode[[1]]!= pm$preMode[[1]]),"red","black"))
+                         col=ifelse((median(pm$data[[1]]$prev)!= median(pm$data[[1]]$postv)),"red","black"))
                  ))))
-      
-      
+        }
     }
-    
-    }
-  
-}
+  }
 
 
 lay <- rbind(
