@@ -88,47 +88,45 @@ grid.arrange(grobs = grobs,
              ))
 
 
-#Aggregation PLot at comp levels
+#Aggregation plot at component levels
 dfC <- allflows %>%  filter(enabler == "D", comp == "P") 
 
-
-ggplot( allflows, aes(prev, postv, size=freq , color=plev)) +
-  geom_point(alpha=0.4, position=position_jitter(h=0.02,w=0.02))+
-  scale_size_continuous(range = c(4, 10), trans="exp")+
-  geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
-  # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
-  coord_cartesian(xlim = 0:3,ylim =0:3)+
- facet_wrap( vars(enabler,comp), ncol=2,labeller = label_wrap_gen(multi_line=FALSE))
-
-
-
-# library(ggalluvial)
-# dfC <- allflows %>% 
-#   filter(!(prev ==0 | postv ==0)  )%>% 
-#   mutate(vdiff=postv-prev)
-# ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
-#   geom_flow(aes(fill = plev), width = 1/8) +
-#   geom_stratum(width = 1/8)+
-#   geom_label(stat = "stratum", label.strata = TRUE, label.size = 0.15) +
-#   scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
-#   theme(axis.title=element_blank(), axis.text = element_blank(),legend.position = "none" ) +
-#   ggtitle("PEMM")+
-#   facet_wrap(  ~comp, ncol=1,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")
-# 
-
-#Aggregation PLot at comp levels
+#Aggregation PLot at C levels
 set.seed(955)
-ggplot( allflows, aes(prev, postv, size=freq , color=plev)) +
-  geom_point(alpha=0.4, shape = 21, position=position_jitter(h=0.05,w=0.05), stroke = 2)+
-  scale_size_continuous(range = c(4, 9), trans="exp")+
+ggplot( allflows, aes(prev, postv, size=freq, color=plev )) +
+  geom_point(alpha=0.4, shape=21, position=position_jitter(h=0.05,w=0.05), stroke = 1.5)+
+  scale_size_continuous(range = c(1, 12), trans="identity")+
   geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
-  scale_colour_hue( l=80)+
   theme_bw() +
-  # scale_colour_wsj("colors6")+
+  # scale_colour_manual("my3cols")+
   # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
   coord_cartesian(xlim = 1:3,ylim =1:3)+
   facet_wrap( vars(enabler,comp), ncol=2,labeller = label_wrap_gen(multi_line=FALSE))
 
+#Aggregation plot at P levels
+ggplot( allflows, aes(prev, postv, size=freq)) +
+  geom_point(alpha=0.4)+
+  scale_size_continuous(range = c(1, 5), trans="exp")+
+  geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
+  coord_cartesian(xlim = 0:3,ylim =0:3)+
+  facet_wrap( vars(enabler,comp,plev), ncol=4,labeller = label_wrap_gen(multi_line=FALSE))
 
+library(ggalluvial)
+dfC <- allflows %>%
+  filter(!(prev ==0 | postv ==0)  )
 
- 
+ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
+  geom_alluvium(aes(fill=prev), width = 1/12, alpha=0.3) +
+  geom_stratum(width = 1/12)+
+  geom_text(stat = "stratum", label.strata = TRUE) +
+  scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
+    # theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = "none",
+    axis.text.x = element_text(size = 2)
+  )+ggtitle("PEMM")+
+  facet_wrap(  ~enabler+comp, ncol=3,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")
