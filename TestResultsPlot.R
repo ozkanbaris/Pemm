@@ -1,20 +1,8 @@
-
-if(!require(psych)){install.packages("psych")}
-if(!require(ordinal)){install.packages("ordinal")}
-if(!require(car)){install.packages("car")}
-if(!require(RVAideMemoire)){install.packages("RVAideMemoire")}
-
 library(tidyverse)
 library(reshape2)
 library(grid)
 library(gridExtra)
-
-library(psych)
-library(ordinal)
-library(car)
-library(RVAideMemoire)
 library(coin) 
-
 source("LoadPemm.R") 
 
 # Create the function.
@@ -29,24 +17,11 @@ getPostmode <- function(v) {
   uniqv <- unique(nz[[1]])
   uniqv[which.max(tabulate(match(nz[[1]], uniqv)))]
 }
-#lastchange
 calWX <- function(df) {
   df<-df %>% filter( !(prev ==0 | postv ==0)  ) 
-  # df<-df %>% filter(!is.na(prev) | !is.na(postv) ) 
-  r<-wilcoxsign_test (df$prev ~ df$postv)
-  res<-paste(round(pvalue(r),3) ,"-" , statistic(r, "linear"))
+  r<-wilcoxsign_test (df$prev ~ df$postv, distribution = "exact")
+  list(round(pvalue(r),3) , round(statistic(r),3))
 }
-
-calClmm <- function(dft) {
-  dft<-dft %>% filter(!(prev ==0 | postv ==0)  )
-  dat1<-dft  %>% select(-postv)  %>% rename( score = prev)   %>% mutate( Time = "Pre")
-  dat2<-dft  %>% select(-prev)  %>% rename( score = postv)    %>% mutate( Time = "Post")
-  
-  myData <- bind_rows(dat1,dat2)
-  myData$score.f <- factor(myData$score, ordered = TRUE)
-  myData
-}
-
 
 assdata<-inner_join(melted_post, melted_pre,
                     by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = "Persoon"))  %>% 
@@ -56,8 +31,8 @@ allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv)
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
 allflowsPP <- allflowsPP %>%  mutate(wxTest = map(data, calWX),
                                      preMode = map(data, getPrevmode), 
-                                     postMode=map(data, getPostmode),
-                                     clmmP=map(data, calClmm))
+                                     postMode=map(data, getPostmode)
+                                     )
 
 cells<-assdata  %>% group_by(enabler,comp,plev) %>% nest() %>% select (-data)
 enablers<-  as_vector(distinct(cells,enabler))
@@ -82,44 +57,42 @@ for (en in enablers) {
   
   # 
   for (enc in ecomps) {
-    grobs<-c(grobs,  list(grobTree(rectGrob(gp=gpar(fill=1, alpha=0.2,fontsize = 5)), textGrob(enc))))
+    grobs<-c(grobs,  list(grobTree(rectGrob(gp=gpar(fill=1, alpha=0.2,fontsize = 3)), textGrob(enc))))
     
     encpleve<-as_vector(filter(cells, enabler==en, comp==enc) %>% select(plev))
     
     
     for (encp in encpleve) {
       pm<-filter(allflowsPP, enabler==en,  comp==enc,plev==encp)
-      pInc<-  sum(pm$data[[1]]$vdiff >0, na.rm=TRUE)
-      pDec<-  sum(pm$data[[1]]$vdiff <0, na.rm=TRUE)
-      anovaData<-pm$clmmP[[1]]
       
-      anovaData$Persoon<-factor(anovaData$Persoon)
-      
-      model = clmm(score.f ~ Time + (1|Persoon), data = anovaData)
-      
-      anavon<-Anova.clmm(model,type = "II")
-      
-      model.clm = clm(score.f ~ Time + Persoon,  data = anovaData)
-      
-      ntest<- nominal_test(model.clm)
-      stest<- scale_test(model.clm)
-      
-      
+      pmd<-as.data.frame(pm$data[[1]])
+      pInc<-  sum(pmd$vdiff >0)
+      pDec<-  sum(pmd$vdiff <0)
+      meda <- median(pmd$prev[pmd$prev!=0])
+      medb <- median(pmd$postv[pmd$postv!=0])
     
-      print(en)
-      print(enc)
-      print(encp)
-      print(median(pm$data[[1]]$prev))
-       print(median(pm$data[[1]]$postv))
       grobs<-c(grobs,list(grobTree(
-        rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]]< .05,"green","white"), alpha=0.2,fontsize = 5)), 
-        textGrob(paste(" Wx.Sig p-Stat", pm$wxTest[[1]]," (+):",pInc, "(-)", pDec,
-                       # "\n modPr-Pst:", pm$preMode,"-", pm$postMode, " clmmPS ",round(anavon[[3]],4)),
-                       "\n medPr-Pst:", median(pm$data[[1]]$prev),"-", median(pm$data[[1]]$postv),"mods", pm$preMode,"-", pm$postMode, " cPS ",round(anavon[[3]],4)),
-                        gp=gpar(fontface = ifelse(round(anavon[[3]],4) < .05,2,1), 
-                         # col=ifelse((pm$postMode[[1]]!= pm$preMode[[1]]),"red","black"))
-                         col=ifelse((median(pm$data[[1]]$prev)!= median(pm$data[[1]]$postv)),"red","black"))
-                 ))))
+        rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]]< .05,"green","white"), alpha=0.2)), 
+        textGrob(
+          paste(en,enc,encp,
+            " Wx.Sig p:Stat-",
+            paste(pm$wxTest[[1]][1], ":", pm$wxTest[[1]][2]) ,
+            " (+):",
+            pInc,
+            "(-)",
+            pDec,
+            "\n medPr-Pst:",
+            meda,
+          ":",
+          medb,
+          "mods",
+          pm$preMode,
+          "-",
+          pm$postMode
+        ),        gp = gpar(fontface = ifelse((medb != meda), 2, 1),fontsize=5))
+        
+      )))
+        
         }
     }
   }
@@ -142,7 +115,7 @@ lay <- rbind(
   c(1,66,c(72:76)))
 # 
 grid.arrange(grobs= grobs, layout_matrix = lay, 
-             widths = unit(c(1, 1, 1, 4,4,4,4),  c("lines", "null", "null", "null","null","null","null")))
+             widths = unit(c(1, 1, 1, 4,4,4,4),  c("null", "null", "null", "null","null","null","null")))
 
 
 
