@@ -5,7 +5,7 @@ library(ggplot2)
 library(ggalluvial)
 source("LoadPemm.R")
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
-cNames<-c( "Purpose", "Context", "Documantation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
+cNames<-c( "Purpose", "Context", "Documentation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
            "Authority","IS", "HRS","Definition", "Uses")
 assdata <-
   inner_join(
@@ -33,10 +33,10 @@ pointPlotP<-ggplot( allflows, aes(prev, postv, size=freq )) +
   # scale_colour_manual("my3cols")+
   theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
   coord_cartesian(xlim = 0:3,ylim =0:3)+
-  facet_wrap( vars(enabler,comp,plev), ncol=4,labeller = label_wrap_gen(multi_line=FALSE))+
+  facet_wrap( vars(comp,plev), ncol=4,labeller = label_wrap_gen(multi_line=FALSE))+
   theme(
     strip.background = element_blank(),
-    # strip.text.x = element_blank()
+    strip.text.x = element_blank()
   )
 
 
@@ -53,9 +53,9 @@ pointPlotPC<-ggplot( allflows, aes(prev, postv, size=freq, color=plev )) +
   # scale_colour_manual("my3cols")+
   # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
   coord_cartesian(xlim = 1:3,ylim =1:3)+
-  facet_wrap( vars(enabler,comp), ncol=1,labeller = label_wrap_gen(multi_line=FALSE))+theme(
+  facet_wrap( vars(comp), ncol=1,labeller = label_wrap_gen(multi_line=FALSE))+theme(
     strip.background = element_blank(),
-    strip.text.x = element_blank(),
+    strip.text.x = element_blank()
     
   )
 
@@ -87,6 +87,8 @@ pointPlotC<-ggplot( allflowsC, aes(prev, postv, size=bfreq )) +
 dfC <- allflows %>%  filter(!(prev ==0 | postv ==0)  )
 dfC$prev=factor(dfC$prev, levels = c(3, 2, 1))
 dfC$postv=factor(dfC$postv, levels = c(3, 2, 1))
+dfC$comp=factor(dfC$comp,
+levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
 
 allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
   geom_flow(aes(fill=prev), width = 1/14, alpha=0.5) +
@@ -95,7 +97,7 @@ allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
   scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
   # scale_fill_manual(values  = c(A_col, B_col, C_col)) +
   # scale_color_manual(values = c(A_col, B_col, C_col)) +
-  theme_grey() +
+  theme_grey() + scale_colour_grey()+
   theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
   theme(
     legend.position = "none",
@@ -105,10 +107,14 @@ allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
     axis.ticks  = element_blank(),
     axis.text.x = element_text(size = 5)
   )+
-  facet_wrap(  ~enabler+comp+plev, ncol=4,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+
+  facet_wrap(  ~comp+plev, ncol=4,strip.position="right",
+               labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+
   theme(
-    # strip.background = element_blank(),
-    # strip.text.x = element_blank()
+    panel.margin = unit(0, "lines"),
+    strip.background = element_blank(),
+    strip.text = element_text(face="bold", size=6,lineheight=5.0),
+    panel.border = element_rect(colour = rgb(1.0, 0, 0, 0.5), fill=NA, size=1)
+    
   )
 
 #Aggregation alluvial at C levels with P colored
@@ -117,9 +123,11 @@ allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
   geom_stratum(width = 1/14, alpha=0.5)+
   geom_text(stat = "stratum", label.strata = TRUE,  size = 1) +
   scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
+  scale_fill_manual(name = "", values=c("#A0A0A0", "#494949","white", "black")) +
+  scale_colour_gradient(low = "black", high = "white")+
   # scale_fill_manual(values  = c(A_col, B_col, C_col)) +
   # scale_color_manual(values = c(A_col, B_col, C_col)) +
-  theme_minimal() +
+  theme_minimal() + 
   theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
   theme(
     legend.position = "none",
@@ -128,7 +136,7 @@ allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
     axis.text.y = element_blank(),
     axis.ticks  = element_blank(),
     axis.text.x = element_text(size = 5))+
-    facet_wrap(  ~enabler+comp, ncol=1,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+theme(
+    facet_wrap(  ~comp, ncol=1,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+theme(
     strip.background = element_blank(),
     strip.text.x = element_blank()
   )

@@ -20,7 +20,8 @@ getPostmode <- function(v) {
 calWX <- function(df) {
   df<-df %>% filter( !(prev ==0 | postv ==0)  ) 
   r<-wilcoxsign_test (df$prev ~ df$postv, distribution = "exact")
-  list(round(pvalue(r),3) , round(statistic(r),3))
+  effect <- abs(statistic(r, type = "standardized"))/sqrt(2*length(df$prev))
+  list(round(pvalue(r),3) , round(statistic(r, type = "standardized"),3),round(effect,3))
 }
 
 assdata<-inner_join(melted_post, melted_pre,
@@ -70,13 +71,12 @@ for (en in enablers) {
       pDec<-  sum(pmd$vdiff <0)
       meda <- median(pmd$prev[pmd$prev!=0])
       medb <- median(pmd$postv[pmd$postv!=0])
-    
+     
       grobs<-c(grobs,list(grobTree(
         rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]]< .05,"green","white"), alpha=0.2)), 
         textGrob(
-          paste(en,enc,encp,
-            " Wx.Sig p:Stat-",
-            paste(pm$wxTest[[1]][1], ":", pm$wxTest[[1]][2]) ,
+          paste(" Wx.Sig p:Stat:Effect-",
+            paste(pm$wxTest[[1]][1], ":", pm$wxTest[[1]][2], ":",pm$wxTest[[1]][3]) ,
             " (+):",
             pInc,
             "(-)",
@@ -89,7 +89,7 @@ for (en in enablers) {
           pm$preMode,
           "-",
           pm$postMode
-        ),        gp = gpar(fontface = ifelse((medb != meda), 2, 1),fontsize=5))
+        ),        gp = gpar(fontface = ifelse((medb != meda), 2, 1),fontsize=7))
         
       )))
         
