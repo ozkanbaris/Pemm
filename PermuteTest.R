@@ -22,27 +22,31 @@ assdata<-inner_join(melted_post, melted_pre, by= c("enabler" = "enabler", "plev"
 
 
 
-dft <- assdata %>%  filter(enabler == "D", comp == "C", plev== "P1") 
-
+dft <- assdata %>%  filter(enabler == "D", comp == "P", plev== "P1") 
 dat1<-dft  %>% select(-postv)  %>% rename( score = prev)   %>% mutate( Time = "Pre")
 dat2<-dft  %>% select(-prev)  %>% rename( score = postv)    %>% mutate( Time = "Post")
-myData <- bind_rows(dat1,dat2) %>% select(Persoon, score, Time)
-myData$score <- factor(myData$score , ordered = TRUE)
+myData <- bind_rows(dat1,dat2) %>% select(Persoon, score, Time)   
 myData$Persoon <- factor(myData$Persoon)
-myData$Time <- factor(myData$Time)
+myData$Time <- factor(myData$Time, levels = c(  "Pre","Post"), ordered=TRUE)
 
 # independence_test(Length ~ Hand,                  data = Data)
-symmetry_test(score ~ Time | Persoon,   data = myData,  paired = TRUE)
+symmetry_test(score ~ Time | Persoon,   data = myData,   paired = TRUE )
+wilcoxsign_test(score ~ Time | Persoon,   data = myData, distribution = "asymptotic" )
 
-
-
-
+pvalue_interval(sm)
+midpvalue(sm)
+pvalue(sm)
+## Two-sample problem
+dta <- data.frame(
+  y = rnorm(20),
+  x = gl(2, 10)
+)
 
 
 melted_prem = melted_pre%>% mutate(Time=1)  %>% rename( score = prev)
 melted_postm = melted_post%>% mutate(Time=2)  %>% rename(  score = postv)
 flatdata = bind_rows(melted_prem,melted_postm) %>% select(-variable)
-testData = flatdata %>%  filter(enabler=="D", comp=="C", plev=="P3")
+testData = flatdata %>%  filter(enabler=="D", comp=="C", plev=="P4")  %>%  filter(score !=0 )
 
 ### Create a new variable which is the Likert scores as an ordered factor
 
@@ -57,7 +61,7 @@ resClmm<-Anova.clmm(model,type = "II")
 model.fixed = clm(score.f ~ Time, data = testData)
 effSize<-anova(model,null = model.fixed)
 
-model.clm = clm(score.f ~ Time + Persoon, data = testData)
+model.clm = clm(score.f ~ Time + Persoon, data = testData,  threshold = "symmetric")
 nominal_test(model.clm)
 scale_test(model.clm)
 
