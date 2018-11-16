@@ -7,6 +7,7 @@ source("LoadPemm.R")
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
 cNames<-c( "Purpose", "Context", "Documentation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
            "Authority","IS", "HRS","Definition", "Uses")
+nb<-c(PU,CO,DO,KN,SK,BR,ID,AC,AU,IS,HR,DE,US)
 assdata <-
   inner_join(
     melted_post,
@@ -20,83 +21,71 @@ assdata <-
   ) %>%
   select(-variable.x,-variable.y) %>% mutate(vdiff = postv - prev)
 allflows <- assdata  %>% group_by(enabler, comp, plev, prev, postv) %>% summarise(freq = n())
-
-
-
-
-# pointPlot at P levels
-pointPlotP<-ggplot( allflows, aes(prev, postv, size=freq )) +
-  geom_point(alpha=0.4, shape=21, stroke = 1.5)+
-  scale_size_continuous(range = c(2,5), trans="identity")+
-  geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
-  theme_bw() +
-  # scale_colour_manual("my3cols")+
-  theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
-  coord_cartesian(xlim = 0:3,ylim =0:3)+
-  facet_wrap( vars(comp,plev), ncol=4,labeller = label_wrap_gen(multi_line=FALSE))+
-  theme(
-    strip.background = element_blank(),
-    strip.text.x = element_blank()
-  )
-
-
-
-#Aggregation pointPLot at C levels with color P
-set.seed(955)
-# allflowsCP <- allflows %>%  filter(!(prev ==0 | postv ==0)  )
-
-pointPlotPC<-ggplot( allflows, aes(prev, postv, size=freq, color=plev )) +
-  geom_point(alpha=0.4, shape=21, position=position_jitter(h=0.05,w=0.05), stroke = 1.5)+
-  scale_size_continuous(range = c(1, 12), trans="identity")+
-  geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
-  theme_bw() +
-  # scale_colour_manual("my3cols")+
-  # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
-  coord_cartesian(xlim = 1:3,ylim =1:3)+
-  facet_wrap( vars(comp), ncol=1,labeller = label_wrap_gen(multi_line=FALSE))+theme(
-    strip.background = element_blank(),
-    strip.text.x = element_blank()
-    
-  )
-
-
-
-#Aggregation pointPLot at C levels
-set.seed(955)
-allflowsC<- allflows %>% group_by(enabler, comp, prev, postv) %>% summarise(bfreq=sum(freq))
-
-pointPlotC<-ggplot( allflowsC, aes(prev, postv, size=bfreq )) +
-  geom_point(alpha=0.4, shape=21, stroke = 1.5)+
-  scale_size_continuous(range = c(1, 12), trans="identity")+
-  geom_abline(intercept = 0, slope = 1, colour="#E41A1C") +
-  theme_bw() +
-  # scale_colour_manual("my3cols")+
-  # theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
-  coord_cartesian(xlim = 1:3,ylim =1:3)+
-  facet_wrap( vars(enabler,comp), ncol=1,labeller = label_wrap_gen(multi_line=FALSE))+theme(
-    strip.background = element_blank(),
-    strip.text.x = element_blank()
-  )
-
-
-
-# grid.arrange(pointPlotC,pointPlotPC,pointPlotP,widths = unit( c(1,1,4), c("null","null","null","null")),ncol=3)
-
-
-#Aggregation alluvial at P levels
 dfC <- allflows %>%  filter(!(prev ==0 | postv ==0)  )
 dfC$prev=factor(dfC$prev, levels = c(3, 2, 1))
 dfC$postv=factor(dfC$postv, levels = c(3, 2, 1))
 dfC$comp=factor(dfC$comp,
-levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
+                levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
+dfC<-arrange(dfC,comp,plev,prev,postv)
 
+
+# pointPlot at P levels
+allflows$comp=factor(allflows$comp,
+                     levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
+pointPlotP<-ggplot( allflows, aes(prev, postv, size=freq )) +
+  geom_point(alpha=0.4, shape=21, stroke = 1.5)+
+  scale_size_continuous(range = c(2,6), trans="exp")+
+  geom_abline(intercept = 0, slope = 1, colour="blue") +
+  theme_minimal() + 
+  theme(axis.title=element_blank(), axis.text = element_blank()) +
+  coord_cartesian(xlim = 0:3,ylim =0:3)+
+  facet_grid(comp~plev,labeller = label_wrap_gen(multi_line=FALSE))+
+  theme(
+    panel.spacing = unit(0, "lines"),
+    legend.position="bottom",
+    strip.background = element_blank(),
+    strip.placement="inside",
+    strip.text = element_text(face="bold", size=6,lineheight=3.0),
+    panel.border = element_rect(colour = "black", fill=NA, size=0.5)
+  )
+
+dorianGray<-c(  "#fef0d9",  "#fdcc8a",  "#fc8d59",  "#d7301f")
+dorianGray<-c("#e66101","#fdb863","#b2abd2","#5e3c99")
+#Aggregation alluvial at C levels with P colored
+allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
+  geom_flow(aes(fill=plev), width = 1/8, alpha=0.9) +
+  geom_stratum(width = 1/8, alpha=0.8)+
+  geom_text(stat = "stratum", label.strata = TRUE,  size = 3) +
+  scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
+  scale_fill_manual(name = "", values=dorianGray) +
+  theme_minimal() + 
+  theme(axis.title=element_blank(), axis.text = element_blank(), legend.position = c(0.5, 0.1), legend.direction = "horizontal") +
+  theme(
+    # legend.position = c(1,4),
+     panel.grid.major = element_blank(), 
+     panel.grid.minor = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks  = element_blank(),
+    axis.text.x = element_text(size = 10))+
+    facet_wrap(  ~comp, ncol=3,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y", 
+                 strip.position="left")+
+  theme(
+    panel.spacing = unit(0, "lines"),
+    strip.background = element_blank(),
+    strip.placement="inside",
+    strip.text = element_text(face="bold", size=6,lineheight=3.0)
+    # panel.border = element_rect(colour = "red", fill=NA, size=1)
+  )
+
+
+
+
+#Aggregation alluvial at P levels
 allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
   geom_flow(aes(fill=prev), width = 1/14, alpha=0.5) +
   geom_stratum(width = 1/14)+
   geom_text(stat = "stratum", label.strata = TRUE,  size = 1) +
   scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
-  # scale_fill_manual(values  = c(A_col, B_col, C_col)) +
-  # scale_color_manual(values = c(A_col, B_col, C_col)) +
   theme_grey() + scale_colour_grey()+
   theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
   theme(
@@ -108,37 +97,13 @@ allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
     axis.text.x = element_text(size = 5)
   )+
   facet_wrap(  ~comp+plev, ncol=4,strip.position="right",
-               labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+
+             labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+
   theme(
     panel.margin = unit(0, "lines"),
     strip.background = element_blank(),
     strip.text = element_text(face="bold", size=6,lineheight=5.0),
     panel.border = element_rect(colour = rgb(1.0, 0, 0, 0.5), fill=NA, size=1)
     
-  )
-
-#Aggregation alluvial at C levels with P colored
-allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
-  geom_flow(aes(fill=plev), width = 1/14, alpha=0.5) +
-  geom_stratum(width = 1/14, alpha=0.5)+
-  geom_text(stat = "stratum", label.strata = TRUE,  size = 1) +
-  scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
-  scale_fill_manual(name = "", values=c("#A0A0A0", "#494949","white", "black")) +
-  scale_colour_gradient(low = "black", high = "white")+
-  # scale_fill_manual(values  = c(A_col, B_col, C_col)) +
-  # scale_color_manual(values = c(A_col, B_col, C_col)) +
-  theme_minimal() + 
-  theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
-  theme(
-    legend.position = "none",
-    panel.grid.major = element_blank(), 
-    panel.grid.minor = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks  = element_blank(),
-    axis.text.x = element_text(size = 5))+
-    facet_wrap(  ~comp, ncol=1,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+theme(
-    strip.background = element_blank(),
-    strip.text.x = element_blank()
   )
 
 # # header
