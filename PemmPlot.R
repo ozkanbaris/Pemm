@@ -7,39 +7,28 @@ source("LoadPemm.R")
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
 cNames<-c( "Purpose", "Context", "Documentation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
            "Authority","IS", "HRS","Definition", "Uses")
-nb<-c(PU,CO,DO,KN,SK,BR,ID,AC,AU,IS,HR,DE,US)
-assdata <-
-  inner_join(
-    melted_post,
-    melted_pre,
-    by = c(
-      "enabler" = "enabler",
-      "plev" = "plev",
-      "comp" = "comp",
-      "Persoon" = "Persoon"
-    )
-  ) %>%
-  select(-variable.x,-variable.y) %>% mutate(vdiff = postv - prev)
-allflows <- assdata  %>% group_by(enabler, comp, plev, prev, postv) %>% summarise(freq = n())
-dfC <- allflows %>%  filter(!(prev ==0 | postv ==0)  )
-dfC$prev=factor(dfC$prev, levels = c(3, 2, 1))
-dfC$postv=factor(dfC$postv, levels = c(3, 2, 1))
-dfC$comp=factor(dfC$comp,
-                levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
-dfC<-arrange(dfC,comp,plev,prev,postv)
 
+allflowsG <- allflows %>% summarise(freq = n())
+allflowsG<-arrange(allflowsG,comp,plev,prev,postv)
 
+ mylbler <-  function(x) {
+   plev
+   comp
+   a<-"test"
+   
+ }
+ 
+ 
 # pointPlot at P levels
-allflows$comp=factor(allflows$comp,
-                     levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
-pointPlotP<-ggplot( allflows, aes(prev, postv, size=freq )) +
-  geom_point(alpha=0.4, shape=21, stroke = 1.5)+
-  scale_size_continuous(range = c(2,6), trans="exp")+
+pointPlotP<-ggplot( allflowsG, aes(prev, postv, size=freq )) +
+  geom_point(alpha=0.4, shape=21, stroke = 1)+
+  scale_size_continuous(range = c(4,8), trans="exp")+
   geom_abline(intercept = 0, slope = 1, colour="blue") +
   theme_minimal() + 
-  theme(axis.title=element_blank(), axis.text = element_blank()) +
-  coord_cartesian(xlim = 0:3,ylim =0:3)+
-  facet_grid(comp~plev,labeller = label_wrap_gen(multi_line=FALSE))+
+  theme(axis.title=element_blank(), axis.text =  element_blank()) +
+  coord_cartesian(xlim = 0.5:3.5,ylim =0.5:3.5)+
+  labs(x = "stats here ...")+
+  facet_wrap(comp~plev, ncol=4,  labeller = mylbler )+
   theme(
     panel.spacing = unit(0, "lines"),
     legend.position="bottom",
@@ -49,9 +38,12 @@ pointPlotP<-ggplot( allflows, aes(prev, postv, size=freq )) +
     panel.border = element_rect(colour = "black", fill=NA, size=0.5)
   )
 
-dorianGray<-c(  "#fef0d9",  "#fdcc8a",  "#fc8d59",  "#d7301f")
+# dorianGray<-c(  "#fef0d9",  "#fdcc8a",  "#fc8d59",  "#d7301f")
 dorianGray<-c("#e66101","#fdb863","#b2abd2","#5e3c99")
 #Aggregation alluvial at C levels with P colored
+dfC <- allflowsG %>%  filter(!(prev ==0 | postv ==0)  )
+dfC$prev=factor(dfC$prev, levels = c(3, 2, 1))
+dfC$postv=factor(dfC$postv, levels = c(3, 2, 1))
 allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
   geom_flow(aes(fill=plev), width = 1/8, alpha=0.9) +
   geom_stratum(width = 1/8, alpha=0.8)+
@@ -76,9 +68,6 @@ allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
     strip.text = element_text(face="bold", size=6,lineheight=3.0)
     # panel.border = element_rect(colour = "red", fill=NA, size=1)
   )
-
-
-
 
 #Aggregation alluvial at P levels
 allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +

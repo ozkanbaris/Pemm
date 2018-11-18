@@ -19,16 +19,21 @@ getPostmode <- function(v) {
 }
 calWX <- function(df) {
   df<-df %>% filter( !(prev ==0 | postv ==0)  ) 
-  r<-wilcoxsign_test (df$prev ~ df$postv, distribution = "exact")
-  effect <- abs(statistic(r, type = "standardized"))/sqrt(2*length(df$prev))
-  list(round(pvalue(r),3) , round(statistic(r, type = "standardized"),3),round(effect,3))
+  r<-wilcoxsign_test (df$prev ~ df$postv, distribution = "exact",conf.int = TRUE)
+  # 
+  # dat1<-df  %>% select(-postv)  %>% rename( score = prev)   %>% mutate( Time = "Pre")
+  # dat2<-df  %>% select(-prev)  %>% rename( score = postv)    %>% mutate( Time = "Post")
+  # myData <- bind_rows(dat1,dat2) %>% select(Persoon, score, Time)
+  # myData$Persoon <- factor(myData$Persoon)
+  # myData$Time <- factor(myData$Time, levels = c(  "Pre","Post"), ordered=TRUE)
+  # rp<- symmetry_test(score ~ Time | Persoon,   data = myData,    distribution ="exact")
+  # 
+  # 
+  
+  effect <- statistic(r, type = "standardized")/sqrt(2*length(df$prev))
+  list(round(pvalue(r),3) , round(statistic(r, type = "standardized"),3),round(effect,3),pvalue_interval(r))
 }
 
-assdata<-inner_join(melted_post, melted_pre,
-                    by= c("enabler" = "enabler", "plev" = "plev", "comp"="comp", "Persoon" = "Persoon"))  %>% 
-                    select(-variable.x, -variable.y) %>% mutate(vdiff=postv-prev)
-
-allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
 allflowsPP <- allflowsPP %>%  mutate(wxTest = map(data, calWX),
                                      preMode = map(data, getPrevmode), 
@@ -73,9 +78,9 @@ for (en in enablers) {
       medb <- median(pmd$postv[pmd$postv!=0])
      
       grobs<-c(grobs,list(grobTree(
-        rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]]< .05,"green","white"), alpha=0.2)), 
+        rectGrob(gp=gpar(fill=ifelse(pm$wxTest[[1]][1]< .05,"green","white"), alpha=0.2)), 
         textGrob(
-          paste(" Wx.Sig p:Stat:Effect-",
+          paste(" P:S:E-",
             paste(pm$wxTest[[1]][1], ":", pm$wxTest[[1]][2], ":",pm$wxTest[[1]][3]) ,
             " (+):",
             pInc,

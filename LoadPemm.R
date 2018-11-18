@@ -18,6 +18,22 @@ melted_pre <-
     plev = str_sub(variable, 4, 5),
     comp = str_sub(variable, 2, 3)
   )  %>% replace(., is.na(.), 0)
+
+assdata <- inner_join(
+  melted_post,
+  melted_pre,
+  by = c(
+    "enabler" = "enabler",
+    "plev" = "plev",
+    "comp" = "comp",
+    "Persoon" = "Persoon"
+  )
+)  %>%
+  select(-variable.x,-variable.y) %>% mutate(vdiff = postv - prev)
+
+allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
+allflows$comp=factor(allflows$comp,levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
+allflows$plev=factor(allflows$plev, levels = c("P1", "P2", "P3", "P4"))
 # 
 # 
 # postpem<-postpem %>% replace(., is.na(.), 0)
