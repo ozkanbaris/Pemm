@@ -4,43 +4,84 @@ library(ggplotify)
 library(ggplot2)
 library(ggalluvial)
 source("LoadPemm.R")
+source("TestResultsPlot.R") 
+
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
 cNames<-c( "Purpose", "Context", "Documentation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
            "Authority","IS", "HRS","Definition", "Uses")
+ccodes<- c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US")
+
+testAsString<-function(comp1,plev1){
+  pm<-filter(allflowsPP,comp==comp1,plev==plev1)
+  pmd<-as.data.frame(pm$data[[1]])
+  # pInc<-  sum(pmd$vdiff >0)
+  # pDec<-  sum(pmd$vdiff <0)
+  medb <- median(pmd$prev[pmd$prev!=0])
+  meda <- median(pmd$postv[pmd$postv!=0])
+  altLabel<- paste(comp1, plev1,
+    " Median(Pre-Post)=", medb,"-", meda,
+    ",W=", pm$wxTest[[1]][2], 
+    ",P=" , pm$wxTest[[1]][1] ,
+    ",r=", pm$wxTest[[1]][3]
+    )
+}
+lookupC<-c(
+      PU = "Purpose",
+       CO = "Context",
+       DO = "Documentation",
+       KN = "Knowledge",
+       SK = "Skills",
+       BR = "Behavior",
+       ID = "Identity",
+       AC = "Activities",
+       AU = "Authority",
+       IS = "IS",
+       HR = "HRS",
+       DE = "Definition",
+       US = "Uses"
+)
+
+
+
+appender <- function(string) {
+
+  l<-substr(string,3,100)
+  l
+}
 
 allflowsG <- allflows %>% summarise(freq = n())
 allflowsG<-arrange(allflowsG,comp,plev,prev,postv)
+allflowsGR<- allflowsG%>% mutate(altP=testAsString(comp, plev))
+allflowsGR$comp=factor(allflowsGR$comp,levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
+allflowsGR$plev=factor(allflowsGR$plev, levels = c("P1", "P2", "P3", "P4"))
+# allflowsGR<-filter(allflowsGR, comp=="PU", plev=="P1")
 
- mylbler <-  function(x) {
-   plev
-   comp
-   a<-"test"
-   
- }
- 
- 
 # pointPlot at P levels
-pointPlotP<-ggplot( allflowsG, aes(prev, postv, size=freq )) +
+pointPlotP<-ggplot( allflowsGR, aes(prev, postv, size=freq)) +
   geom_point(alpha=0.4, shape=21, stroke = 1)+
-  scale_size_continuous(range = c(4,8), trans="exp")+
+  scale_size_continuous(range = c(2,9))+
   geom_abline(intercept = 0, slope = 1, colour="blue") +
   theme_minimal() + 
   theme(axis.title=element_blank(), axis.text =  element_blank()) +
   coord_cartesian(xlim = 0.5:3.5,ylim =0.5:3.5)+
-  labs(x = "stats here ...")+
-  facet_wrap(comp~plev, ncol=4,  labeller = mylbler )+
+  facet_wrap(comp ~ altP, ncol=4,labeller =labeller(comp=lookupC, altP=appender,.multi_line = FALSE))+
+  scale_fill_discrete(name="Frequency")+
+  ggtitle("Pre-Post BPMS Implementation PEMM Effect Frequency Plot")+
   theme(
-    panel.spacing = unit(0, "lines"),
-    legend.position="bottom",
-    strip.background = element_blank(),
-    strip.placement="inside",
-    strip.text = element_text(face="bold", size=6,lineheight=3.0),
-    panel.border = element_rect(colour = "black", fill=NA, size=0.5)
+     panel.spacing = unit(0, "lines"),
+     legend.position="none",
+     legend.text = element_text(colour="blue", size=5, face="bold"),
+     legend.key.height = unit(2,"line"),
+     legend.margin = margin(1, 1, 1, 1),
+     strip.background = element_rect(colour = "gray", fill= 'gray', size=0.5),
+     strip.text = element_text(face="bold", size=4,lineheight=1.0),
+     panel.border = element_rect(colour = "grey", fill=NA, size=0.3)
   )
 
+
+#Aggregation alluvial at C levels with P colored
 # dorianGray<-c(  "#fef0d9",  "#fdcc8a",  "#fc8d59",  "#d7301f")
 dorianGray<-c("#e66101","#fdb863","#b2abd2","#5e3c99")
-#Aggregation alluvial at C levels with P colored
 dfC <- allflowsG %>%  filter(!(prev ==0 | postv ==0)  )
 dfC$prev=factor(dfC$prev, levels = c(3, 2, 1))
 dfC$postv=factor(dfC$postv, levels = c(3, 2, 1))
@@ -65,35 +106,41 @@ allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
     panel.spacing = unit(0, "lines"),
     strip.background = element_blank(),
     strip.placement="inside",
-    strip.text = element_text(face="bold", size=6,lineheight=3.0)
+    strip.text = element_text(face="plain", size=6,lineheight=2.5)
     # panel.border = element_rect(colour = "red", fill=NA, size=1)
   )
 
-#Aggregation alluvial at P levels
-allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
-  geom_flow(aes(fill=prev), width = 1/14, alpha=0.5) +
-  geom_stratum(width = 1/14)+
-  geom_text(stat = "stratum", label.strata = TRUE,  size = 1) +
-  scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
-  theme_grey() + scale_colour_grey()+
-  theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
-  theme(
-    legend.position = "none",
-    panel.grid.major = element_blank(), 
-    panel.grid.minor = element_blank(),
-    axis.text.y = element_text(size= 5),
-    axis.ticks  = element_blank(),
-    axis.text.x = element_text(size = 5)
-  )+
-  facet_wrap(  ~comp+plev, ncol=4,strip.position="right",
-             labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+
-  theme(
-    panel.margin = unit(0, "lines"),
-    strip.background = element_blank(),
-    strip.text = element_text(face="bold", size=6,lineheight=5.0),
-    panel.border = element_rect(colour = rgb(1.0, 0, 0, 0.5), fill=NA, size=1)
-    
-  )
+unlink("pointPlotP.pdf")
+unlink("allCAlluv.pdf")
+ggsave("pointPlotP.pdf", plot=pointPlotP, width = 20, height = 20, units = "cm")
+ggsave("allCAlluv.pdf", plot=allCAlluv, width = 20, height = 20, units = "cm")
+
+
+# #Aggregation alluvial at P levels
+# allPAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
+#   geom_flow(aes(fill=prev), width = 1/14, alpha=0.5) +
+#   geom_stratum(width = 1/14)+
+#   geom_text(stat = "stratum", label.strata = TRUE,  size = 1) +
+#   scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
+#   theme_grey() + scale_colour_grey()+
+#   theme(axis.title=element_blank(), axis.text = element_blank() , legend.position="none") +
+#   theme(
+#     legend.position = "none",
+#     panel.grid.major = element_blank(), 
+#     panel.grid.minor = element_blank(),
+#     axis.text.y = element_text(size= 5),
+#     axis.ticks  = element_blank(),
+#     axis.text.x = element_text(size = 5)
+#   )+
+#   facet_wrap(  ~comp+plev, ncol=4,strip.position="right",
+#              labeller = label_wrap_gen(multi_line=FALSE),scales="free_y")+
+#   theme(
+#     panel.margin = unit(0, "lines"),
+#     strip.background = element_blank(),
+#     strip.text = element_text(face="bold", size=6,lineheight=5.0),
+#     panel.border = element_rect(colour = rgb(1.0, 0, 0, 0.5), fill=NA, size=1)
+#     
+#   )
 
 # # header
 # grobs<-list(
