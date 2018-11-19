@@ -20,7 +20,7 @@ testAsString<-function(comp1,plev1){
   meda <- median(pmd$postv[pmd$postv!=0])
   altLabel<- paste(comp1, plev1,
     " Median(Pre-Post)=", medb,"-", meda,
-    ",W=", pm$wxTest[[1]][2], 
+    "\n W=", pm$wxTest[[1]][2], 
     ",P=" , pm$wxTest[[1]][1] ,
     ",r=", pm$wxTest[[1]][3]
     )
@@ -58,8 +58,8 @@ allflowsGR$plev=factor(allflowsGR$plev, levels = c("P1", "P2", "P3", "P4"))
 
 # pointPlot at P levels
 pointPlotP<-ggplot( allflowsGR, aes(prev, postv, size=freq)) +
-  geom_point(alpha=0.4, shape=21, stroke = 1)+
-  scale_size_continuous(range = c(2,9))+
+  geom_point(alpha=0.4, shape=21, stroke = 1.5, color="#FF335E" )+
+  scale_size_continuous(range = c(2,6))+
   geom_abline(intercept = 0, slope = 1, colour="blue") +
   theme_minimal() + 
   theme(axis.title=element_blank(), axis.text =  element_blank()) +
@@ -70,11 +70,11 @@ pointPlotP<-ggplot( allflowsGR, aes(prev, postv, size=freq)) +
   theme(
      panel.spacing = unit(0, "lines"),
      legend.position="none",
-     legend.text = element_text(colour="blue", size=5, face="bold"),
+     legend.text = element_text(colour="blue", size=5),
      legend.key.height = unit(2,"line"),
      legend.margin = margin(1, 1, 1, 1),
-     strip.background = element_rect(colour = "gray", fill= 'gray', size=0.5),
-     strip.text = element_text(face="bold", size=4,lineheight=1.0),
+     strip.background = element_rect(colour = "gray", size=0.5),
+     strip.text = element_text(size=5),
      panel.border = element_rect(colour = "grey", fill=NA, size=0.3)
   )
 
@@ -100,13 +100,12 @@ allCAlluv<-ggplot(dfC, aes(y = freq, axis1 = prev, axis2 = postv)) +
     axis.text.y = element_blank(),
     axis.ticks  = element_blank(),
     axis.text.x = element_text(size = 10))+
-    facet_wrap(  ~comp, ncol=3,labeller = label_wrap_gen(multi_line=FALSE),scales="free_y", 
+    facet_wrap(  ~comp, ncol=3,labeller  =labeller(comp=lookupC,multi_line = FALSE),scales="free_y", 
                  strip.position="left")+
   theme(
     panel.spacing = unit(0, "lines"),
     strip.background = element_blank(),
-    strip.placement="inside",
-    strip.text = element_text(face="plain", size=6,lineheight=2.5)
+    strip.text = element_text(face="plain", size=9,lineheight=2.5)
     # panel.border = element_rect(colour = "red", fill=NA, size=1)
   )
 
