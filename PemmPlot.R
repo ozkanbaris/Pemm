@@ -202,3 +202,24 @@ ggsave("allCAlluv.pdf", plot=allCAlluv, width = 20, height = 20, units = "cm")
 #     axis.ticks  = element_blank(),
 #     axis.text.x = element_text(size = 2)
 #   )
+
+distinct(filter(group_by(allflows, comp, plev),all(vdiff<=0)), comp, plev)
+mv<- allflowsPP %>%  select(comp,plev,medpre, medpost) %>% unnest() %>% mutate(medpre=floor(medpre), medpost= floor(medpost))
+mv<-melt(mv) %>% rename(Rating=value)
+labelM<-c(
+  medpre = "Pre-implementation Maturity Level Map",
+  medpost = "Post-implementation Maturity Level Map"
+  
+)
+p<- ggplot(mv,aes(x=comp,y=plev,fill=Rating))+labs(y= 'Maturity Levels', x='PEMM Components')
+p+geom_tile(colour = "blue")+scale_fill_continuous(low = "#f0f0f0", high = "#636363", breaks=1:3 )+
+  facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))
+
+
+
+
+
+
+
+
+

@@ -34,10 +34,17 @@ calWX <- function(df) {
   list(round(pvalue(r),3) , round(statistic(r, type = "standardized"),3),round(effect,3))
 }
 
+medos<- function(pmd)median(pmd$prev[pmd$prev!=0])
+medos2<- function(pmd)median(pmd$postv[pmd$postv!=0])
+
 allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
 allflowsPP <- allflowsPP %>%  mutate(wxTest = map(data, calWX),
                                      preMode = map(data, getPrevmode), 
-                                     postMode=map(data, getPostmode))
+                                     postMode=map(data, getPostmode), medpre = map(data,medos), medpost= map(data,medos2) )
+
+      
+     
+
 
 
 # 
