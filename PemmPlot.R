@@ -217,9 +217,23 @@ p+geom_tile(colour = "blue")+scale_fill_continuous(low = "#f0f0f0", high = "#636
 
 
 
+dfC <- allflows %>%  filter(!(prev ==0 | postv ==0)  )
+dfC$prev=factor(dfC$prev, levels = c(3, 2, 1))
+dfC$postv=factor(dfC$postv, levels = c(3, 2, 1))
+
+dfC1 <- dfC %>%  filter(postv!= prev)  %>% group_by(comp) %>% summarise (count=n()) %>% arrange()
 
 
+dfC2 <- dfC %>%  filter(postv== prev)  %>% group_by(comp) %>% summarise (count=n()) %>% arrange()
+
+t<-inner_join(dfC1,dfC2,by='comp') %>% mutate(rr=count.x/count.y)
 
 
-
-
+ggplot(dfC, aes(y = 1, axis1 = prev, axis2 = postv)) +
+  geom_flow(aes(fill=plev), width = 1/14, alpha=0.5) +
+  geom_stratum(width = 1/14)+
+  geom_text(stat = "stratum", label.strata = TRUE) +
+  scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) 
+  
+ 
+ 
