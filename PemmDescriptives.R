@@ -1,5 +1,9 @@
 library(ggplot2)
 source("LoadPemmData.R")
+library("VIM")
+library("dplyr")
+library("ggplot2")
+library("gridExtra")
 
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
 cNames<-c( "Purpose", "Context", "Documentation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
@@ -32,5 +36,34 @@ pointPlotP<-ggplot( allflowsGR, aes(prev, postv, size=freq)) +
   
 pointPlotP
 
+
+mv<- allflowsPP %>%  select(comp,plev,medpre, medpost) %>% unnest() 
+mv<-melt(mv) %>% rename(Rating=value)
+labelM<-c(
+  prev = "Distribution of Zero Ratings",
+  postv = "Post-implementation Maturity Level Map"
+  
+)
+
+
+
+
+
+library(reshape)
+allflowszero <- reshape2::melt(allflows, measure.vars= c("postv","prev")) %>% filter(value==0)
+
+allflowsm<- allflowszero%>% mutate(comp = factor(comp,levels = c("AU","DE","HR","AC","US","DO","IS","ID","KN","CO","PU","BR","SK")))
+
+allflowssmp<- allflowsm %>%group_by(enabler,comp,plev) %>% summarise(freq=n()/2)
+
+p<- ggplot(allflowssmp,aes(x=comp,y=plev,fill=freq))+labs(y= 'Process Condition', x='PEMM Components')
+p+geom_tile(colour = "blue")+scale_fill_continuous(low = "#f0f0f0", high = "#636363")
+  # facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))
+
+allflowsm <- reshape2::melt(allflows, measure.vars= c("postv","prev"))%>%
+  filter(value==0)%>% group_by(Persoon,enabler,comp) %>% summarise(freq=n())
  
- 
+
+allflowsm <- reshape2::melt(allflows, measure.vars= c("postv","prev")) %>%
+  filter(value==0) %>%  group_by(enabler,comp) %>% summarise(freq=n())
+

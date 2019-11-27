@@ -5,6 +5,7 @@ postpem <- read_csv('data/PEMMPST.csv')
 prepem  <- read_csv('data/PEMMPR.csv') 
 postpem <- postpem %>% replace(., is.na(.), 0)
 prepem  <- prepem %>% replace(., is.na(.), 0)
+cfint <- read_csv('data/cfint.csv')
 
 melted_post <-
   melt(postpem, id.vars = "Persoon", value.name = "postv")  %>%
@@ -35,22 +36,5 @@ assdata <- inner_join(
 allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
 allflows$comp=factor(allflows$comp,levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
 allflows$plev=factor(allflows$plev, levels = c("P1", "P2", "P3", "P4"))
-# 
-# 
-# postpem<-postpem %>% replace(., is.na(.), 0)
-# 
-# prepem<-prepem %>% replace(., is.na(.), 0)
-# 
-# cols <- c(2:53)
-# 
-# prepem <- lapply(prepem[cols], factor,levels = c("0","1", "2", "3"),ordered = TRUE)
-# p1<- likert(as.data.frame(prepem))
-# plot(p1, ordered=FALSE)
-# 
-# 
-# postpem <- lapply(postpem[cols], factor,levels = c("0","1", "2", "3"),ordered = TRUE)
-# p2<- likert(as.data.frame(postpem))
-# plot(p2, ordered=FALSE)
-
 
 
