@@ -1,9 +1,5 @@
 library(ggplot2)
 source("LoadPemmData.R")
-library("VIM")
-library("dplyr")
-library("ggplot2")
-library("gridExtra")
 
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
 cNames<-c( "Purpose", "Context", "Documentation","Knowledge", "Skills", "Behavior", "Identity", "Activities", 
