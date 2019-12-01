@@ -33,7 +33,7 @@ assdata <- inner_join(
   )
 )  %>%  select(-variable.x,-variable.y) 
 
-allflows <- assdata  %>% group_by(enabler,comp,plev, prev, postv) 
+allflows <- assdata 
 allflows$comp=factor(allflows$comp,levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
 allflows$plev=factor(allflows$plev, levels = c("P1", "P2", "P3", "P4"))
 

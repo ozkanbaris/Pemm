@@ -1,9 +1,5 @@
-library(gridExtra)
-library(grid)
-library(ggplotify)
 library(ggplot2)
 library(ggalluvial)
-source("LoadPemm.R")
 source("TestResultsPlot.R") 
 
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
@@ -49,22 +45,22 @@ appender <- function(string) {
   l
 }
 
-allflowsG <- allflows %>% summarise(freq = n())
-allflowsG<-arrange(allflowsG,comp,plev,prev,postv)
-allflowsGR<- allflowsG%>% mutate(altP=testAsString(comp, plev))
-allflowsGR$comp=factor(allflowsGR$comp,levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
-allflowsGR$plev=factor(allflowsGR$plev, levels = c("P1", "P2", "P3", "P4"))
+allflowsG<-group_by(allflows,comp,prev,postv) %>% summarise (freq=n())
+
+allflowsG$comp=factor(allflowsGR$comp,levels = c("PU","CO","DO","KN","SK","BR","ID","AC","AU","IS","HR","DE","US"))
+allflowsG$plev=factor(allflowsGR$plev, levels = c("P1", "P2", "P3", "P4"))
+
 # allflowsGR<-filter(allflowsGR, comp=="PU", plev=="P1")
 
 # pointPlot at P levels
-pointPlotP<-ggplot( allflowsGR, aes(prev, postv, size=freq)) +
-  geom_point(alpha=0.4, shape=21, stroke = 1.5, color="#FF335E" )+
+pointPlotP<-ggplot( allflowsG, aes(prev, postv, size=freq)) +
+  geom_point(aes(), alpha=0.4, pch=21, stroke = 1.5)+
   scale_size_continuous(range = c(2,6))+
   geom_abline(intercept = 0, slope = 1, colour="blue") +
   theme_minimal() + 
   theme(axis.title=element_blank(), axis.text =  element_blank()) +
   coord_cartesian(xlim = 0.5:3.5,ylim =0.5:3.5)+
-  facet_wrap(comp ~ altP, ncol=4,labeller =labeller(comp=lookupC, altP=appender,.multi_line = FALSE))+
+  facet_wrap(. ~ comp, ncol=4,labeller =labeller(comp=lookupC, altP=appender,.multi_line = FALSE))+
   scale_fill_discrete(name="Frequency")+
   ggtitle("Pre-Post BPMS Implementation PEMM Effect Frequency Plot")+
   theme(
@@ -116,16 +112,26 @@ ggsave("allCAlluv.pdf", plot=allCAlluv, width = 20, height = 20, units = "cm")
 
 
 distinct(filter(group_by(allflows, comp, plev),all(vdiff<=0)), comp, plev)
-mv<- allflowsPP %>%  select(comp,plev,medpre, medpost) %>% unnest() %>% mutate(medpre=floor(medpre), medpost= floor(medpost))
+
+
+mv<- allflowsPP %>%  select(comp,plev,medpre, medpost) %>% unnest() %>% mutate(medpre=medpre, medpost= medpost)
 mv<-melt(mv) %>% rename(Rating=value)
 labelM<-c(
   medpre = "Pre-implementation Maturity Level Map",
   medpost = "Post-implementation Maturity Level Map"
   
 )
-p<- ggplot(mv,aes(x=comp,y=plev,fill=Rating))+labs(y= 'Maturity Levels', x='PEMM Components')
-p+geom_tile(colour = "blue")+scale_fill_continuous(low = "#f0f0f0", high = "#636363", breaks=1:3 )+
-  facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))
+p<- ggplot(mv,aes(x=comp,y=plev,fill=Rating))+labs(y= 'Process Maturity Level', x='PEMM Component', )
+p+geom_tile(colour = "blue")+
+  scale_fill_continuous(low = "#e6e6e6", high = "#636363",name="Rating\nMedian", breaks=1:3)+
+   theme(legend.text=element_text(size=12), legend.title=element_text(size=12),
+         axis.text.x = element_text(size=14,angle = 90, hjust = 1, vjust = 0.5))+
+  scale_x_discrete(labels = lookupC)+
+  theme(    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank())+
+  facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))+
+  theme(strip.text.x = element_text(size = 18))
+  
 
 
 

@@ -50,10 +50,30 @@ allflowszero <- reshape2::melt(allflows, measure.vars= c("postv","prev")) %>% fi
 
 allflowsm<- allflowszero%>% mutate(comp = factor(comp,levels = c("AU","DE","HR","AC","US","DO","IS","ID","KN","CO","PU","BR","SK")))
 
+allflowsm<-add_row(allflowsm,Persoon=1, enabler="P",comp="SK",plev="P4",variable="postv",value=0)
+
+
+
+
 allflowssmp<- allflowsm %>%group_by(enabler,comp,plev) %>% summarise(freq=n()/2)
 
-p<- ggplot(allflowssmp,aes(x=comp,y=plev,fill=freq))+labs(y= 'Process Condition', x='PEMM Components')
-p+geom_tile(colour = "blue")+scale_fill_continuous(low = "#f0f0f0", high = "#636363")
+
+
+p<- ggplot(allflowssmp,aes(x=comp,y=plev,fill=freq))+labs(y= 'Process Maturity Level', x='PEMM Components')+
+  theme(legend.text=element_text(size=10), legend.title=element_text(size=10),
+        axis.text.x = element_text(size=12,angle = 90, hjust = 0.5, vjust = 0.5))+
+  scale_x_discrete(labels = lookupC)+
+  theme(    panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank())
+p+geom_tile()+  scale_fill_viridis_c(name="Number\nof Zeros")
+
+
+
+
+
+
+
+
   # facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))
 
 allflowsm <- reshape2::melt(allflows, measure.vars= c("postv","prev"))%>%
