@@ -1,0 +1,31 @@
+FID,Factor,Row,Capability,CID,Rating
+6,CULTURE,4,Leadership Attention to Process,1,N
+6,CULTURE,3,Process Attitudes and Behaviors,2,L
+6,CULTURE,5,Process Management Social Networks,3,N
+6,CULTURE,2,Process Values and Beliefs,4,L
+6,CULTURE,1,Responsiveness to Process Change,5,M
+2,GOVERNANCE,5,Process Management Controls,6,N
+2,GOVERNANCE,1,Process Management Decision Making,7,L
+2,GOVERNANCE,4,Process Management Standards,8,L
+2,GOVERNANCE,3,Process Metrics and Performance Linkage,9,N
+2,GOVERNANCE,2,Process Roles and Responsibilities,10,L
+5,INFORMATION TECHNOLOGY,3,Process Control and Measurement,11,L
+5,INFORMATION TECHNOLOGY,1,Process Design and Modeling,12,H
+5,INFORMATION TECHNOLOGY,2,Process Implementation and Execution,13,H
+5,INFORMATION TECHNOLOGY,4,Process Improvement and Innovation,14,N
+5,INFORMATION TECHNOLOGY,5,Process Project and Program Management,15,N
+4,METHODS,3,Process Control and Measurement,16,L
+4,METHODS,1,Process Design and Modeling,17,M
+4,METHODS,2,Process Implementation and Execution,18,M
+4,METHODS,4,Process Improvement and Innovation,19,L
+4,METHODS,5,Process Project and Program Management,20,N
+3,PEOPLE,4,Process Collaboration and Communication,21,M
+3,PEOPLE,3,Process Education and Learning,22,H
+3,PEOPLE,2,Process Management Knowledge,23,L
+3,PEOPLE,5,Process Management Leaders,24,L
+3,PEOPLE,1,Process Skills and Expertise,25,L
+1,STRATEGIC ALIGNMENT,3,Enterprise Process Architecture,26,L
+1,STRATEGIC ALIGNMENT,5,Process Customers and Stakeholders,27,M
+1,STRATEGIC ALIGNMENT,1,Process Improvement Plan,28,M
+1,STRATEGIC ALIGNMENT,4,Process Output Measurement,29,M
+1,STRATEGIC ALIGNMENT,2,Strategy and Process Capability Linkage,30,M
