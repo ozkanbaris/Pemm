@@ -1,4 +1,6 @@
 library(ggplot2)
+library(tidyverse)
+library(reshape2)
 source("LoadPemmData.R")
 
 eNames<-c("Design","Performer","Owner","Infrastructure","Metrics")
@@ -68,13 +70,7 @@ p<- ggplot(allflowssmp,aes(x=comp,y=plev,fill=freq))+labs(y= 'Process Maturity L
 p+geom_tile()+  scale_fill_viridis_c(name="Number\nof Zeros")
 
 
-
-
-
-
-
-
-  # facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))
+# facet_wrap(~variable, labeller =labeller(variable=labelM, .multi_line = FALSE))
 
 allflowsm <- reshape2::melt(allflows, measure.vars= c("postv","prev"))%>%
   filter(value==0)%>% group_by(Persoon,enabler,comp) %>% summarise(freq=n())
@@ -82,4 +78,29 @@ allflowsm <- reshape2::melt(allflows, measure.vars= c("postv","prev"))%>%
 
 allflowsm <- reshape2::melt(allflows, measure.vars= c("postv","prev")) %>%
   filter(value==0) %>%  group_by(enabler,comp) %>% summarise(freq=n())
+
+
+# Create the function.
+getPrevmode <- function(v) {
+  nz<-filter(v, prev !=0)  %>% select(prev)
+  uniqv <- unique(nz[[1]])
+  uniqv[which.max(tabulate(match(nz[[1]], uniqv)))]
+}
+
+getPostmode <- function(v) {
+  nz<-filter(v, postv !=0) %>% select(postv)
+  uniqv <- unique(nz[[1]])
+  uniqv[which.max(tabulate(match(nz[[1]], uniqv)))]
+}
+
+medos<- function(pmd)median(pmd$prev[pmd$prev!=0])
+medos2<- function(pmd)median(pmd$postv[pmd$postv!=0])
+
+allflowsPP <- allflows %>% group_by(enabler,comp,plev) %>% nest() 
+allflowsPP <- allflowsPP %>%  mutate(preMode = map(data, getPrevmode), 
+                                     postMode=map(data, getPostmode), medpre = map(data,medos), medpost= map(data,medos2) )
+
+
+
+
 

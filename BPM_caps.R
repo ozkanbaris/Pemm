@@ -1,10 +1,7 @@
-library(cowplot)
 library(stringr)
 library(tidyverse)
 library(reshape2)
-
-
-
+library(ggfittext)
 
 # meltcf<-cfint %>% select (-Capability) %>% reshape2::melt(id.vars= c("Factor","CID")) 
 # meltcf$variable=factor(meltcf$variable, levels = c("H", "M", "L", "N"))
@@ -32,33 +29,31 @@ library(reshape2)
 # ggsave('first_page_plots.pdf', pie1, dpi=600)
 
 
-cfint <- read_csv('data/cfint2.csv') 
+cfint <- read_csv('data/BPM-CF_PO_Effect_Rating.csv') 
 cfint$Rating=factor(cfint$Rating, levels= c("N","L", "M","H"), ordered = TRUE)
 cfint$Factor=factor(cfint$Factor, levels = c("STRATEGIC ALIGNMENT", "GOVERNANCE","PEOPLE", "METHODS", "INFORMATION TECHNOLOGY","CULTURE"), ordered=TRUE)
 cfint$freq=1
 cfint$CID=as.factor(cfint$CID)
+cfint$Row=fct_rev(as.factor(cfint$Row))
+
 # color<-c( "#0072b280", "#D55E0080", "#009e7380", "red")
 # ncol<-c("N","L", "M","H")
 # names(color)<-ncol
 # 
 
-
 dorianGray<-c("#FFFFFF","#e5e5e5","#cccccc","#999999")
-
-  
-
 p<- ggplot(cfint,aes(x=str_wrap(cfint$Factor,width = 10),y=Row,fill=Rating, label=Capability))+
   theme(    panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
             axis.title = element_blank(),
             axis.text.y =element_blank(),
-            axis.text.x =element_text(size=10, face = "bold"),
+            axis.text.x =element_text(size=12, face = "bold"),
             legend.position = "none",
             axis.ticks = element_blank())+
             scale_x_discrete(position = "top", expand=c(0,0),limits=str_wrap(c("STRATEGIC ALIGNMENT", "GOVERNANCE", "METHODS", "INFORMATION TECHNOLOGY","PEOPLE","CULTURE"), width =10))+
             scale_y_discrete( expand=c(0,0))+
           geom_tile(color = "black")+ 
-          geom_fit_text(reflow = TRUE, grow=FALSE, size=10)+
+          geom_fit_text(reflow = TRUE, grow=FALSE, size=12)+
   scale_fill_manual(name="", values =dorianGray)
 
 p
