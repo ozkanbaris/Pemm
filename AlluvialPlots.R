@@ -2,12 +2,16 @@ library(ggplot2)
 library(ggalluvial)
 source("LoadPemmData.R")
 
+lo <- read_csv('data/alluvgrid.csv')
+
 freqs <- allflows %>% group_by(comp, plev, prev,postv) %>% summarise(freq=n()) %>% filter(prev!=0 && postv!=0)
 freqs2 <- allflows %>% group_by(comp, prev,postv) %>% summarise(freq=n()) %>% filter(prev!=0 && postv!=0)
 
 
 fx<- freqs2 %>% mutate(lan=paste(comp,prev,postv))%>%melt ( measure.vars = c("prev","postv"), variable.name = "time" )
 fx$value <-as.factor(fx$value)
+
+fxx<-left_join(fx,lo, by=c("comp"="Short"))
 
 dorianGray<-c("#e66101","#fdb863","#b2abd2","#5e3c99")
 lookupC<-c(
@@ -25,25 +29,29 @@ lookupC<-c(
   DE = "Definition",
   US = "Uses"
 )
+# 
+# e1<-c("PU","CO","DO")
+# 
+# e2<-c("KN","SK","BR")
+# 
+# e3<-c("ID","AC","AU")
+# 
+# e4<-c("IS","HR","PU")
+# 
+# e5<-c("DE","US","PU")
 
-e1<-c("PU","CO","DO")
 
-e2<-c("KN","SK","BR")
+fxx$value= factor(fxx$value, ordered=TRUE, levels= c("1","2","3"))
 
-e3<-c("ID","AC","AU")
-
-e4<-c("IS","HR","PU")
-
-e5<-c("DE","US","PU")
-
-
-p5<-ggplot(filter(fx, comp %in% e5),
+p5<-ggplot(fxx,
        aes(x = time, stratum = value, alluvium = lan,
            y = freq,
            fill = value, label = value)) +
   geom_flow(width = 1/8, alpha=0.9) +
   geom_stratum(width = 1/8, alpha=0.8)+
-  geom_text(stat = "stratum", label.strata = TRUE,  size = 3) +
+  stat_stratum(reverse = FALSE) +
+  # stat_stratum(geom = "text", aes(label = value), decreasing = TRUE)+
+  # geom_text(stat = "stratum", label.strata = TRUE,  size = 3) +
   # scale_x_continuous(breaks = 1:2, labels = c("Pre", "Post")) +
   scale_fill_manual(name = "", values=dorianGray) +
   theme_minimal() + 
@@ -56,7 +64,7 @@ p5<-ggplot(filter(fx, comp %in% e5),
     axis.text.y = element_blank(),
     axis.ticks  = element_blank(),
     axis.text.x = element_text(size = 10))+
-  facet_wrap(  ~comp, ncol=1,labeller  =labeller(comp=lookupC,multi_line = FALSE),scales="free_y")+
+  facet_wrap(  Row~comp, ncol=5,labeller  =labeller(comp=lookupC,multi_line = FALSE),scales="free_y")+
   theme(
     panel.spacing = unit(0, "lines"),
     strip.background = element_blank(),
@@ -64,11 +72,9 @@ p5<-ggplot(filter(fx, comp %in% e5),
       theme(legend.position = "none", axis.title = element_blank())
     # panel.border = element_rect(colour = "red", fill=NA, size=1)
   )
+p5
 
 plot_grid(p1, p2,p3,p4,p5)
-
-
-
 
 
 
